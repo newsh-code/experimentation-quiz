@@ -2,15 +2,24 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  output: 'standalone',
-  // Configure asset prefix if deploying to a subdirectory
-  // assetPrefix: process.env.NODE_ENV === 'production' ? '/quiz' : '',
-  // Configure base path if deploying to a subdirectory
-  // basePath: process.env.NODE_ENV === 'production' ? '/quiz' : '',
+  images: {
+    domains: ['images.unsplash.com'],
+  },
+  i18n: {
+    locales: ['en'],
+    defaultLocale: 'en',
+  },
   webpack: (config) => {
-    config.resolve.fallback = { fs: false, path: false };
+    config.resolve.fallback = { fs: false };
     return config;
   },
+  pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
+  distDir: '.next',
+  experimental: {
+    // Remove appDir since it's causing issues
+    typedRoutes: true,
+    scrollRestoration: true
+  }
 }
 
 module.exports = nextConfig 

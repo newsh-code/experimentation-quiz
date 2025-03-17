@@ -1,41 +1,35 @@
-import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
-import { analytics } from '../services/analytics';
+import React, { createContext, useContext, useReducer } from 'react';
+import { QUESTIONS } from '../data/questions';
 
-export type QuizState = {
+interface QuizState {
   currentQuestionIndex: number;
-  answers: Record<number, number>;
+  answers: { [key: number]: number };
   scores: {
-    overall: number;
     process: number;
     strategy: number;
     insight: number;
     culture: number;
   };
-  email?: string;
-  userData?: {
-    name: string;
-    company: string;
-    timestamp: string;
-  };
+  email: string | null;
   isLoading: boolean;
-  page: 'landing' | 'quiz' | 'email' | 'results';
-};
+  isQuizComplete: boolean;
+  userData: {
+    name?: string;
+    company?: string;
+    timestamp?: string;
+  } | null;
+}
 
-export type ActionType =
+type QuizAction =
   | { type: 'START_QUIZ' }
+  | { type: 'ANSWER_QUESTION'; questionId: number; answer: number }
   | { type: 'NEXT_QUESTION' }
   | { type: 'PREVIOUS_QUESTION' }
-  | { type: 'ANSWER_QUESTION'; questionId: number; answer: number }
+  | { type: 'GO_TO_EMAIL' }
   | { type: 'SUBMIT_EMAIL'; email: string; userData: any }
   | { type: 'SKIP_EMAIL' }
-  | { type: 'GO_TO_EMAIL' }
-  | { type: 'GO_TO_RESULTS' }
-  | { type: 'RESET_QUIZ' }
   | { type: 'CALCULATE_SCORES' }
-  | { type: 'SET_LOADING'; isLoading: boolean }
-  | { type: 'RESTORE_STATE'; state: QuizState };
-
-const STORAGE_KEY = 'quiz_state';
+  | { type: 'SET_LOADING'; isLoading: boolean };
 
 const initialState: QuizState = {
   currentQuestionIndex: 0,
@@ -45,244 +39,259 @@ const initialState: QuizState = {
     strategy: 0,
     insight: 0,
     culture: 0,
-    overall: 0,
   },
+  email: null,
   isLoading: false,
-  page: 'landing',
+  isQuizComplete: false,
+  userData: null,
 };
 
-function calculateScores(answers: Record<number, number>): QuizState['scores'] {
-  const categoryScores = {
-    process: 0,
-    strategy: 0,
-    insight: 0,
-    culture: 0,
-  };
-
-  // Calculate scores for each category
-  Object.entries(answers).forEach(([questionId, answer]) => {
-    const id = parseInt(questionId);
-    const category = Math.floor(id / 6); // 6 questions per category
-    const normalizedScore = ((answer + 1) / 4) * 100; // Convert 0-3 to 25-100 scale
-
-    switch (category) {
-      case 0:
-        categoryScores.process += normalizedScore;
-        break;
-      case 1:
-        categoryScores.strategy += normalizedScore;
-        break;
-      case 2:
-        categoryScores.insight += normalizedScore;
-        break;
-      case 3:
-        categoryScores.culture += normalizedScore;
-        break;
-    }
-  });
-
-  // Calculate averages
-  const numQuestions = 6; // questions per category
-  const scores = {
-    process: Math.round(categoryScores.process / numQuestions),
-    strategy: Math.round(categoryScores.strategy / numQuestions),
-    insight: Math.round(categoryScores.insight / numQuestions),
-    culture: Math.round(categoryScores.culture / numQuestions),
-    overall: 0,
-  };
-
-  // Calculate overall score
-  scores.overall = Math.round(
-    (scores.process + scores.strategy + scores.insight + scores.culture) / 4
-  );
-
-  return scores;
-}
-
-type QuizContextType = {
-  state: QuizState;
-  dispatch: React.Dispatch<ActionType>;
-};
-
-const QuizContext = createContext<QuizContextType | null>(null);
-QuizContext.displayName = 'QuizContext';
-
-async function sendToSlack(userData: QuizState['userData'], email: string, scores: QuizState['scores']) {
-  try {
-    const response = await fetch('YOUR_SLACK_WEBHOOK_URL', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        text: `New Quiz Lead:\nName: ${userData?.name}\nCompany: ${userData?.company}\nEmail: ${email}\nOverall Score: ${Math.round(scores.overall)}%`,
-        blocks: [
-          {
-            type: "section",
-            text: {
-              type: "mrkdwn",
-              text: "*New Quiz Lead*"
-            }
-          },
-          {
-            type: "section",
-            fields: [
-              {
-                type: "mrkdwn",
-                text: `*Name:*\n${userData?.name}`
-              },
-              {
-                type: "mrkdwn",
-                text: `*Company:*\n${userData?.company}`
-              },
-              {
-                type: "mrkdwn",
-                text: `*Email:*\n${email}`
-              },
-              {
-                type: "mrkdwn",
-                text: `*Overall Score:*\n${Math.round(scores.overall)}%`
-              }
-            ]
-          }
-        ]
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to send to Slack');
-    }
-  } catch (error) {
-    console.error('Error sending to Slack:', error);
-  }
-}
-
-function quizReducer(state: QuizState, action: ActionType): QuizState {
+function quizReducer(state: QuizState, action: QuizAction): QuizState {
   switch (action.type) {
     case 'START_QUIZ':
-      analytics.trackQuizStart();
+      return {
+        ...initialState,
+        currentQuestionIndex: 0,
+      };
+
+    case 'ANSWER_QUESTION':
+      const newAnswers = {
+        ...state.answers,
+        [action.questionId]: action.answer,
+      };
+      
+      // Check if this was the last question
+      const isLastQuestion = action.questionId === QUESTIONS.length - 1;
+      const allQuestionsAnswered = Object.keys(newAnswers).length === QUESTIONS.length;
+      
+      // Calculate scores if all questions are answered
+      let newScores = { ...state.scores };
+      if (allQuestionsAnswered) {
+        const finalScores = {
+          process: 0,
+          strategy: 0,
+          insight: 0,
+          culture: 0,
+        };
+
+        // Count questions per category
+        const categoryCounts = {
+          process: 0,
+          strategy: 0,
+          insight: 0,
+          culture: 0,
+        };
+        
+        // First pass: count questions per category
+        QUESTIONS.forEach(question => {
+          if (question.category in categoryCounts) {
+            categoryCounts[question.category as keyof typeof categoryCounts]++;
+          }
+        });
+
+        // Second pass: calculate normalized scores
+        Object.entries(newAnswers).forEach(([questionId, answer]) => {
+          const question = QUESTIONS[parseInt(questionId)];
+          if (question && question.category in finalScores) {
+            // Add 1 to answer since it's 0-based but we want 1-4 scale
+            finalScores[question.category as keyof typeof finalScores] += (answer + 1);
+          }
+        });
+
+        // Normalize scores to percentages (1-4 scale to 0-100%)
+        Object.keys(finalScores).forEach(category => {
+          if (category in categoryCounts) {
+            const maxScore = categoryCounts[category as keyof typeof categoryCounts] * 4;
+            finalScores[category as keyof typeof finalScores] = Math.round((finalScores[category as keyof typeof finalScores] / maxScore) * 100);
+          }
+        });
+
+        newScores = finalScores;
+        
+        console.log('Calculating final scores:', {
+          rawScores: finalScores,
+          categoryCounts,
+          totalAnswers: Object.keys(newAnswers).length,
+          hasAllAnswers: allQuestionsAnswered,
+          questionsPerCategory: categoryCounts
+        });
+      }
+      
+      console.log('Answer recorded in context:', {
+        questionId: action.questionId,
+        answer: action.answer,
+        totalAnswers: Object.keys(newAnswers).length,
+        isLastQuestion,
+        allQuestionsAnswered,
+        currentValue: newAnswers[action.questionId]
+      });
+
       return {
         ...state,
-        page: 'quiz',
-        isLoading: false,
+        answers: newAnswers,
+        scores: newScores,
+        isQuizComplete: isLastQuestion && allQuestionsAnswered,
       };
+
     case 'NEXT_QUESTION':
-      if (state.currentQuestionIndex === 23) {
-        const scores = calculateScores(state.answers);
-        analytics.trackQuizComplete(scores);
-        return {
-          ...state,
-          page: 'email',
-          scores,
-          isLoading: false,
-        };
+      // Prevent going beyond the last question
+      if (state.currentQuestionIndex >= QUESTIONS.length - 1) {
+        return state;
       }
+
+      // Ensure current question is answered
+      const currentAnswer = state.answers[state.currentQuestionIndex];
+      if (currentAnswer === undefined) {
+        console.log('Cannot proceed: current question not answered', {
+          currentQuestionIndex: state.currentQuestionIndex,
+          answers: state.answers
+        });
+        return state;
+      }
+
+      console.log('Moving to next question:', {
+        fromIndex: state.currentQuestionIndex,
+        toIndex: state.currentQuestionIndex + 1,
+        currentAnswer,
+        answers: state.answers
+      });
+
       return {
         ...state,
         currentQuestionIndex: state.currentQuestionIndex + 1,
-        isLoading: false,
       };
-    case 'GO_TO_EMAIL':
-      const scores = calculateScores(state.answers);
-      analytics.trackQuizComplete(scores);
-      return {
-        ...state,
-        page: 'email',
-        scores,
-        isLoading: false,
-      };
+
     case 'PREVIOUS_QUESTION':
-      return {
-        ...state,
-        currentQuestionIndex: Math.max(0, state.currentQuestionIndex - 1),
-        isLoading: false,
-      };
-    case 'ANSWER_QUESTION':
-      analytics.trackQuestionAnswer(action.questionId, action.answer);
-      return {
-        ...state,
-        answers: {
-          ...state.answers,
-          [action.questionId]: action.answer,
-        },
-        isLoading: false,
-      };
-    case 'SUBMIT_EMAIL':
-      analytics.trackEmailSubmit(action.email);
-      // Send to Slack
-      if (state.userData) {
-        sendToSlack(state.userData, action.email, state.scores);
+      // Prevent going before the first question
+      if (state.currentQuestionIndex <= 0) {
+        return state;
       }
       return {
         ...state,
+        currentQuestionIndex: state.currentQuestionIndex - 1,
+      };
+
+    case 'GO_TO_EMAIL':
+      // Only proceed if all questions are answered
+      const hasAllAnswers = Object.keys(state.answers).length === QUESTIONS.length;
+      
+      if (!hasAllAnswers) {
+        console.log('Cannot proceed to email: not all questions answered');
+        return state;
+      }
+      
+      // Calculate scores before proceeding
+      const finalScores = {
+        process: 0,
+        strategy: 0,
+        insight: 0,
+        culture: 0,
+      };
+
+      // Count questions per category
+      const categoryCounts = {
+        process: 0,
+        strategy: 0,
+        insight: 0,
+        culture: 0,
+      };
+      
+      // First pass: count questions per category
+      QUESTIONS.forEach(question => {
+        if (question.category in categoryCounts) {
+          categoryCounts[question.category as keyof typeof categoryCounts]++;
+        }
+      });
+
+      // Second pass: calculate normalized scores
+      Object.entries(state.answers).forEach(([questionId, answer]) => {
+        const question = QUESTIONS[parseInt(questionId)];
+        if (question && question.category in finalScores) {
+          // Add 1 to answer since it's 0-based but we want 1-4 scale
+          finalScores[question.category as keyof typeof finalScores] += (answer + 1);
+        }
+      });
+
+      // Normalize scores to percentages (1-4 scale to 0-100%)
+      Object.keys(finalScores).forEach(category => {
+        if (category in categoryCounts) {
+          const maxScore = categoryCounts[category as keyof typeof categoryCounts] * 4; // 4 is max score per question
+          finalScores[category as keyof typeof finalScores] = Math.round((finalScores[category as keyof typeof finalScores] / maxScore) * 100);
+        }
+      });
+
+      console.log('Calculating final scores:', {
+        rawScores: finalScores,
+        categoryCounts,
+        totalAnswers: Object.keys(state.answers).length,
+        hasAllAnswers,
+        questionsPerCategory: categoryCounts
+      });
+
+      return {
+        ...state,
+        scores: finalScores, // Store scores but don't mark as complete yet
+        currentQuestionIndex: QUESTIONS.length - 1, // Keep at last question if going back
+        isQuizComplete: false, // Don't mark as complete until email is submitted
+      };
+
+    case 'SUBMIT_EMAIL':
+      console.log('Email submitted, marking quiz as complete');
+      return {
+        ...state,
         email: action.email,
-        page: 'results',
-        isLoading: false,
+        userData: action.userData,
+        isQuizComplete: true, // Only mark as complete after email is submitted
       };
+
     case 'SKIP_EMAIL':
-      analytics.trackEmailSkip();
       return {
         ...state,
-        page: 'results',
-        isLoading: false,
+        isQuizComplete: true,
       };
+
     case 'CALCULATE_SCORES':
+      // Calculate scores based on answers
+      const scores = {
+        process: 0,
+        strategy: 0,
+        insight: 0,
+        culture: 0,
+      };
+      
+      Object.entries(state.answers).forEach(([questionId, answer]) => {
+        const question = QUESTIONS[parseInt(questionId)];
+        if (question) {
+          scores[question.category] += answer;
+        }
+      });
+
       return {
         ...state,
-        scores: calculateScores(state.answers),
-        isLoading: false,
+        scores,
       };
+
     case 'SET_LOADING':
       return {
         ...state,
         isLoading: action.isLoading,
       };
-    case 'RESTORE_STATE':
-      return {
-        ...state,
-        ...action.state,
-        isLoading: false,
-      };
-    case 'RESET_QUIZ':
-      return {
-        ...initialState,
-        page: 'landing'
-      };
-    case 'GO_TO_RESULTS':
-      return {
-        ...state,
-        page: 'results',
-      };
+
     default:
       return state;
   }
 }
 
-export function QuizProvider({ children }: { children: ReactNode }) {
+const QuizContext = createContext<{
+  state: QuizState;
+  dispatch: React.Dispatch<QuizAction>;
+} | null>(null);
+
+export function QuizProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(quizReducer, initialState);
 
-  // Load state from localStorage on mount
-  useEffect(() => {
-    const savedState = localStorage.getItem(STORAGE_KEY);
-    if (savedState) {
-      try {
-        const parsedState = JSON.parse(savedState);
-        dispatch({ type: 'RESTORE_STATE', state: parsedState });
-      } catch (error) {
-        console.error('Error restoring quiz state:', error);
-      }
-    }
-  }, []);
-
-  // Save state to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
-
-  const value = React.useMemo(() => ({ state, dispatch }), [state]);
-
   return (
-    <QuizContext.Provider value={value}>
+    <QuizContext.Provider value={{ state, dispatch }}>
       {children}
     </QuizContext.Provider>
   );

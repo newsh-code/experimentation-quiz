@@ -1,5 +1,33 @@
-import jsPDF from 'jspdf';
+import PDFDocument from 'pdfkit';
 import { QuizState } from '../context/QuizContext';
+import DOMPurify from 'dompurify';
+
+// Constants for validation
+const MAX_SCORE = 100;
+const MIN_SCORE = 0;
+const MAX_TEXT_LENGTH = 500;
+const ALLOWED_CATEGORIES = ['process', 'strategy', 'insight', 'culture'];
+
+// Sanitize and validate user input
+function sanitizeUserInput(input: string): string {
+  return DOMPurify.sanitize(input, { ALLOWED_TAGS: [] });
+}
+
+function validateScore(score: number): number {
+  return Math.min(Math.max(score, MIN_SCORE), MAX_SCORE);
+}
+
+function validateCategoryScores(scores: Record<string, number>): Record<string, number> {
+  const validatedScores: Record<string, number> = {};
+  
+  Object.entries(scores).forEach(([category, score]) => {
+    if (ALLOWED_CATEGORIES.includes(category)) {
+      validatedScores[category] = validateScore(score);
+    }
+  });
+
+  return validatedScores;
+}
 
 const PERSONAS = {
   beginner: {
@@ -32,121 +60,147 @@ const PERSONAS = {
 };
 
 function getPersonaLevel(score: number): keyof typeof PERSONAS {
-  if (score >= 80) return 'advanced';
-  if (score >= 60) return 'intermediate';
+  const validatedScore = validateScore(score);
+  if (validatedScore >= 80) return 'advanced';
+  if (validatedScore >= 60) return 'intermediate';
   return 'beginner';
 }
 
 function formatScore(score: number): string {
-  return `${Math.round(score)}%`;
+  return `${Math.round(validateScore(score))}%`;
 }
 
-export async function generatePDFReport(state: QuizState): Promise<void> {
+export async function generatePDFReport(state: QuizState): Promise<Buffer> {
   if (!state.scores) {
     throw new Error('No scores available to generate report');
   }
 
-  const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 20;
-  let yPosition = 20;
+  // Validate and sanitize user data
+  const sanitizedUserData = state.userData ? {
+    name: sanitizeUserInput(state.userData.name),
+    company: sanitizeUserInput(state.userData.company),
+    timestamp: state.userData.timestamp
+  } : null;
 
-  // Helper function for text wrapping
-  const addWrappedText = (text: string, y: number, maxWidth: number = pageWidth - 2 * margin) => {
-    const lines = doc.splitTextToSize(text, maxWidth);
-    doc.text(lines, margin, y);
-    return y + (lines.length * 7);
-  };
+  const sanitizedEmail = state.email ? sanitizeUserInput(state.email) : null;
+  const validatedScores = validateCategoryScores(state.scores);
 
-  // Header
-  doc.setFontSize(24);
-  doc.setTextColor(41, 128, 185); // Professional blue
-  yPosition = addWrappedText('Experimentation Maturity Assessment', yPosition);
-
-  // Date
-  doc.setFontSize(10);
-  doc.setTextColor(100);
-  yPosition += 10;
-  doc.text(new Date().toLocaleDateString(), margin, yPosition);
-
-  // User Info
-  if (state.userData) {
-    yPosition += 15;
-    doc.setFontSize(12);
-    doc.setTextColor(0);
-    doc.text(`Name: ${state.userData.name || 'Not provided'}`, margin, yPosition);
-    yPosition += 7;
-    doc.text(`Company: ${state.userData.company || 'Not provided'}`, margin, yPosition);
-    yPosition += 7;
-    doc.text(`Email: ${state.email || 'Not provided'}`, margin, yPosition);
-  }
-
-  // Overall Score and Persona
-  yPosition += 20;
-  doc.setFontSize(16);
-  doc.setTextColor(41, 128, 185);
-  doc.text('Your Results', margin, yPosition);
-
-  yPosition += 10;
-  doc.setFontSize(14);
-  doc.setTextColor(0);
-  const persona = PERSONAS[getPersonaLevel(state.scores.overall)];
-  doc.text(`Persona: ${persona.name}`, margin, yPosition);
-
-  yPosition += 10;
-  doc.text(`Overall Maturity Score: ${formatScore(state.scores.overall)}`, margin, yPosition);
-
-  // Category Scores
-  yPosition += 15;
-  doc.setFontSize(14);
-  doc.setTextColor(41, 128, 185);
-  doc.text('Category Breakdown', margin, yPosition);
-
-  yPosition += 10;
-  doc.setFontSize(12);
-  doc.setTextColor(0);
-  const categories = [
-    { name: 'Process', score: state.scores.process },
-    { name: 'Strategy', score: state.scores.strategy },
-    { name: 'Insight', score: state.scores.insight },
-    { name: 'Culture', score: state.scores.culture },
-  ];
-
-  categories.forEach(category => {
-    yPosition += 7;
-    doc.text(`${category.name}: ${formatScore(category.score)}`, margin, yPosition);
+  // Create a new PDF document
+  const doc = new PDFDocument({
+    margin: 50,
+    size: 'A4'
   });
 
-  // Persona Description
-  yPosition += 20;
-  doc.setFontSize(14);
-  doc.setTextColor(41, 128, 185);
-  doc.text('Your Experimentation Profile', margin, yPosition);
+  // Collect the PDF data chunks
+  const chunks: Buffer[] = [];
+  doc.on('data', chunk => chunks.push(chunk));
 
-  yPosition += 10;
-  doc.setFontSize(12);
-  doc.setTextColor(0);
-  yPosition = addWrappedText(persona.description, yPosition);
+  // Return a promise that resolves with the complete PDF data
+  return new Promise((resolve, reject) => {
+    doc.on('end', () => {
+      resolve(Buffer.concat(chunks));
+    });
+    doc.on('error', reject);
 
-  // Recommendations
-  yPosition += 15;
-  doc.setFontSize(14);
-  doc.setTextColor(41, 128, 185);
-  doc.text('Recommended Next Steps', margin, yPosition);
+    try {
+      // Header
+      doc.fontSize(24)
+         .fillColor('#2980b9')
+         .text('Experimentation Maturity Assessment', { align: 'center' });
 
-  yPosition += 10;
-  doc.setFontSize(12);
-  doc.setTextColor(0);
-  persona.recommendations.forEach(recommendation => {
-    yPosition += 7;
-    doc.text(`• ${recommendation}`, margin, yPosition);
+      // Date
+      doc.moveDown()
+         .fontSize(10)
+         .fillColor('#666666')
+         .text(new Date().toLocaleDateString());
+
+      // User Info
+      if (sanitizedUserData) {
+        doc.moveDown()
+           .fontSize(12)
+           .fillColor('#000000');
+
+        doc.text(`Name: ${sanitizedUserData.name || 'Not provided'}`);
+        doc.text(`Company: ${sanitizedUserData.company || 'Not provided'}`);
+        doc.text(`Email: ${sanitizedEmail || 'Not provided'}`);
+      }
+
+      // Overall Score and Persona
+      const persona = PERSONAS[getPersonaLevel(validatedScores.overall || 0)];
+      
+      doc.moveDown()
+         .fontSize(16)
+         .fillColor('#2980b9')
+         .text('Your Results');
+
+      doc.moveDown()
+         .fontSize(14)
+         .fillColor('#000000')
+         .text(`Persona: ${persona.name}`)
+         .text(`Overall Maturity Score: ${formatScore(validatedScores.overall || 0)}`);
+
+      // Category Scores
+      doc.moveDown()
+         .fontSize(14)
+         .fillColor('#2980b9')
+         .text('Category Breakdown');
+
+      doc.fontSize(12)
+         .fillColor('#000000');
+
+      const categories = [
+        { name: 'Process', score: validatedScores.process },
+        { name: 'Strategy', score: validatedScores.strategy },
+        { name: 'Insight', score: validatedScores.insight },
+        { name: 'Culture', score: validatedScores.culture },
+      ];
+
+      categories.forEach(category => {
+        doc.text(`${category.name}: ${formatScore(category.score || 0)}`);
+      });
+
+      // Persona Description
+      doc.moveDown()
+         .fontSize(14)
+         .fillColor('#2980b9')
+         .text('Your Experimentation Profile');
+
+      doc.moveDown()
+         .fontSize(12)
+         .fillColor('#000000')
+         .text(persona.description, {
+           width: 500,
+           align: 'justify'
+         });
+
+      // Recommendations
+      doc.moveDown()
+         .fontSize(14)
+         .fillColor('#2980b9')
+         .text('Recommended Next Steps');
+
+      doc.fontSize(12)
+         .fillColor('#000000');
+
+      persona.recommendations.forEach(recommendation => {
+        doc.text(`• ${recommendation}`, {
+          width: 500,
+          bulletRadius: 2
+        });
+      });
+
+      // Footer
+      doc.moveDown()
+         .fontSize(10)
+         .fillColor('#666666')
+         .text('Generated by Experimentation Maturity Assessment', {
+           align: 'center'
+         });
+
+      // Finalize the PDF
+      doc.end();
+    } catch (error) {
+      reject(error);
+    }
   });
-
-  // Footer
-  doc.setFontSize(10);
-  doc.setTextColor(100);
-  doc.text('Generated by Experimentation Maturity Assessment', margin, 280);
-
-  // Download the PDF
-  doc.save('experimentation-maturity-report.pdf');
 } 
