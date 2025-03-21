@@ -2,7 +2,10 @@ export interface Question {
   id: number;
   category: 'process' | 'strategy' | 'insight' | 'culture';
   text: string;
-  options: string[];
+  options: Array<{
+    text: string;
+    score: number;
+  }>;
 }
 
 export const QUESTIONS: Question[] = [
@@ -12,10 +15,10 @@ export const QUESTIONS: Question[] = [
     category: 'process',
     text: 'How do you manage your experimentation process?',
     options: [
-      'We run tests ad-hoc without a formal process',
-      'We have a basic process but it\'s not consistently followed',
-      'We have a documented process that we usually follow',
-      'We have a robust, well-documented process that we always follow'
+      { text: 'We run tests ad-hoc without a formal process', score: 1 },
+      { text: 'We have a basic process but it\'s not consistently followed', score: 2 },
+      { text: 'We have a documented process that we usually follow', score: 3 },
+      { text: 'We have a robust, well-documented process that we always follow', score: 4 }
     ]
   },
   {
@@ -23,10 +26,10 @@ export const QUESTIONS: Question[] = [
     category: 'process',
     text: 'How do you prioritize experiments?',
     options: [
-      'We don\'t have a formal prioritization method',
-      'We prioritize based on gut feel and available resources',
-      'We use basic metrics like potential impact and effort',
-      'We use a comprehensive scoring system with multiple factors'
+      { text: 'We don\'t have a formal prioritization method', score: 1 },
+      { text: 'We prioritize based on gut feel and available resources', score: 2 },
+      { text: 'We use basic metrics like potential impact and effort', score: 3 },
+      { text: 'We use a comprehensive scoring system with multiple factors', score: 4 }
     ]
   },
   {
@@ -34,10 +37,10 @@ export const QUESTIONS: Question[] = [
     category: 'process',
     text: 'How do you document your experiments?',
     options: [
-      'We don\'t document our experiments consistently',
-      'We keep basic records in spreadsheets or documents',
-      'We use a standardized template for documentation',
-      'We maintain a comprehensive knowledge base with detailed records'
+      { text: 'We don\'t document our experiments consistently', score: 1 },
+      { text: 'We keep basic records in spreadsheets or documents', score: 2 },
+      { text: 'We use a standardized template for documentation', score: 3 },
+      { text: 'We maintain a comprehensive knowledge base with detailed records', score: 4 }
     ]
   },
   {
@@ -45,10 +48,10 @@ export const QUESTIONS: Question[] = [
     category: 'process',
     text: 'How do you handle quality assurance for experiments?',
     options: [
-      'We do minimal testing before launch',
-      'We do basic QA checks on major browsers',
-      'We follow a QA checklist with multiple environments',
-      'We have automated testing and thorough QA processes'
+      { text: 'We do minimal testing before launch', score: 1 },
+      { text: 'We do basic QA checks on major browsers', score: 2 },
+      { text: 'We follow a QA checklist with multiple environments', score: 3 },
+      { text: 'We have automated testing and thorough QA processes', score: 4 }
     ]
   },
   {
@@ -56,10 +59,10 @@ export const QUESTIONS: Question[] = [
     category: 'process',
     text: 'How do you manage experiment duration?',
     options: [
-      'We stop tests when we see significant results',
-      'We run tests for a predetermined time period',
-      'We use sample size calculators to determine duration',
-      'We use advanced statistical methods to determine stopping rules'
+      { text: 'We stop tests when we see significant results', score: 1 },
+      { text: 'We run tests for a predetermined time period', score: 2 },
+      { text: 'We use sample size calculators to determine duration', score: 3 },
+      { text: 'We use advanced statistical methods to determine stopping rules', score: 4 }
     ]
   },
   {
@@ -67,10 +70,10 @@ export const QUESTIONS: Question[] = [
     category: 'process',
     text: 'How do you handle multiple concurrent experiments?',
     options: [
-      'We try to avoid running multiple tests at once',
-      'We run multiple tests but don\'t track interactions',
-      'We plan test interactions and avoid conflicts',
-      'We use sophisticated methods to manage multiple tests'
+      { text: 'We try to avoid running multiple tests at once', score: 1 },
+      { text: 'We run multiple tests but don\'t track interactions', score: 2 },
+      { text: 'We plan test interactions and avoid conflicts', score: 3 },
+      { text: 'We use sophisticated methods to manage multiple tests', score: 4 }
     ]
   },
   // Strategy Questions
@@ -79,10 +82,10 @@ export const QUESTIONS: Question[] = [
     category: 'strategy',
     text: 'How do you align experiments with business objectives?',
     options: [
-      'We don\'t explicitly align tests with objectives',
-      'We loosely connect tests to department goals',
-      'We map experiments to specific business KPIs',
-      'We have a strategic experimentation roadmap'
+      { text: 'We don\'t explicitly align tests with objectives', score: 1 },
+      { text: 'We loosely connect tests to department goals', score: 2 },
+      { text: 'We map experiments to specific business KPIs', score: 3 },
+      { text: 'We have a strategic experimentation roadmap', score: 4 }
     ]
   },
   {
@@ -90,10 +93,10 @@ export const QUESTIONS: Question[] = [
     category: 'strategy',
     text: 'How do you generate test ideas?',
     options: [
-      'We test based on stakeholder requests',
-      'We brainstorm ideas within our team',
-      'We use data and user research to generate ideas',
-      'We use a systematic approach combining multiple sources'
+      { text: 'We test based on stakeholder requests', score: 1 },
+      { text: 'We brainstorm ideas within our team', score: 2 },
+      { text: 'We use data and user research to generate ideas', score: 3 },
+      { text: 'We use a systematic approach combining multiple sources', score: 4 }
     ]
   },
   {
@@ -101,10 +104,10 @@ export const QUESTIONS: Question[] = [
     category: 'strategy',
     text: 'How do you measure experiment success?',
     options: [
-      'We focus on conversion rate only',
-      'We track a few key metrics per test',
-      'We use primary and secondary metrics',
-      'We measure both short and long-term impact'
+      { text: 'We focus on conversion rate only', score: 1 },
+      { text: 'We track a few key metrics per test', score: 2 },
+      { text: 'We use primary and secondary metrics', score: 3 },
+      { text: 'We measure both short and long-term impact', score: 4 }
     ]
   },
   {
@@ -112,10 +115,10 @@ export const QUESTIONS: Question[] = [
     category: 'strategy',
     text: 'How do you handle failed experiments?',
     options: [
-      'We move on to the next test',
-      'We try to understand why it failed',
-      'We document learnings and iterate',
-      'We have a systematic process for learning from failures'
+      { text: 'We move on to the next test', score: 1 },
+      { text: 'We try to understand why it failed', score: 2 },
+      { text: 'We document learnings and iterate', score: 3 },
+      { text: 'We have a systematic process for learning from failures', score: 4 }
     ]
   },
   {
@@ -123,10 +126,10 @@ export const QUESTIONS: Question[] = [
     category: 'strategy',
     text: 'How do you approach seasonal changes?',
     options: [
-      'We don\'t account for seasonality',
-      'We avoid testing during major seasons',
-      'We plan our testing calendar around seasons',
-      'We have sophisticated seasonal adjustment methods'
+      { text: 'We don\'t account for seasonality', score: 1 },
+      { text: 'We avoid testing during major seasons', score: 2 },
+      { text: 'We plan our testing calendar around seasons', score: 3 },
+      { text: 'We have sophisticated seasonal adjustment methods', score: 4 }
     ]
   },
   {
@@ -134,10 +137,10 @@ export const QUESTIONS: Question[] = [
     category: 'strategy',
     text: 'How do you handle experiment costs?',
     options: [
-      'We don\'t track experiment costs',
-      'We track basic implementation costs',
-      'We calculate ROI for major experiments',
-      'We have a comprehensive cost-benefit analysis'
+      { text: 'We don\'t track experiment costs', score: 1 },
+      { text: 'We track basic implementation costs', score: 2 },
+      { text: 'We calculate ROI for major experiments', score: 3 },
+      { text: 'We have a comprehensive cost-benefit analysis', score: 4 }
     ]
   },
   // Insight Questions
@@ -146,10 +149,10 @@ export const QUESTIONS: Question[] = [
     category: 'insight',
     text: 'How do you analyze experiment results?',
     options: [
-      'We look at top-line results only',
-      'We do basic statistical significance testing',
-      'We analyze segments and use confidence intervals',
-      'We use advanced statistical methods and ML'
+      { text: 'We look at top-line results only', score: 1 },
+      { text: 'We do basic statistical significance testing', score: 2 },
+      { text: 'We analyze segments and use confidence intervals', score: 3 },
+      { text: 'We use advanced statistical methods and ML', score: 4 }
     ]
   },
   {
@@ -157,10 +160,10 @@ export const QUESTIONS: Question[] = [
     category: 'insight',
     text: 'How do you handle data quality?',
     options: [
-      'We trust the data as is',
-      'We do basic data cleaning',
-      'We have standard data quality checks',
-      'We use automated data validation systems'
+      { text: 'We trust the data as is', score: 1 },
+      { text: 'We do basic data cleaning', score: 2 },
+      { text: 'We have standard data quality checks', score: 3 },
+      { text: 'We use automated data validation systems', score: 4 }
     ]
   },
   {
@@ -168,10 +171,10 @@ export const QUESTIONS: Question[] = [
     category: 'insight',
     text: 'How do you share experiment results?',
     options: [
-      'We share results informally',
-      'We send regular email updates',
-      'We have structured sharing sessions',
-      'We maintain a searchable knowledge base'
+      { text: 'We share results informally', score: 1 },
+      { text: 'We send regular email updates', score: 2 },
+      { text: 'We have structured sharing sessions', score: 3 },
+      { text: 'We maintain a searchable knowledge base', score: 4 }
     ]
   },
   {
@@ -179,10 +182,10 @@ export const QUESTIONS: Question[] = [
     category: 'insight',
     text: 'How do you track long-term impact?',
     options: [
-      'We don\'t track long-term impact',
-      'We occasionally check past winners',
-      'We regularly monitor implemented changes',
-      'We have systematic long-term impact analysis'
+      { text: 'We don\'t track long-term impact', score: 1 },
+      { text: 'We occasionally check past winners', score: 2 },
+      { text: 'We regularly monitor implemented changes', score: 3 },
+      { text: 'We have systematic long-term impact analysis', score: 4 }
     ]
   },
   {
@@ -190,10 +193,10 @@ export const QUESTIONS: Question[] = [
     category: 'insight',
     text: 'How do you use qualitative data?',
     options: [
-      'We rarely use qualitative data',
-      'We occasionally gather user feedback',
-      'We regularly incorporate user research',
-      'We integrate multiple qualitative data sources'
+      { text: 'We rarely use qualitative data', score: 1 },
+      { text: 'We occasionally gather user feedback', score: 2 },
+      { text: 'We regularly incorporate user research', score: 3 },
+      { text: 'We integrate multiple qualitative data sources', score: 4 }
     ]
   },
   {
@@ -201,10 +204,10 @@ export const QUESTIONS: Question[] = [
     category: 'insight',
     text: 'How do you handle unexpected results?',
     options: [
-      'We accept the results as they are',
-      'We double-check our implementation',
-      'We investigate potential causes',
-      'We have a systematic investigation process'
+      { text: 'We accept the results as they are', score: 1 },
+      { text: 'We double-check our implementation', score: 2 },
+      { text: 'We investigate potential causes', score: 3 },
+      { text: 'We have a systematic investigation process', score: 4 }
     ]
   },
   // Culture Questions
@@ -213,10 +216,10 @@ export const QUESTIONS: Question[] = [
     category: 'culture',
     text: 'How is experimentation perceived in your organization?',
     options: [
-      'It\'s seen as optional or nice-to-have',
-      'It\'s important for some teams',
-      'It\'s valued across the organization',
-      'It\'s fundamental to our decision-making'
+      { text: 'It\'s seen as optional or nice-to-have', score: 1 },
+      { text: 'It\'s important for some teams', score: 2 },
+      { text: 'It\'s valued across the organization', score: 3 },
+      { text: 'It\'s fundamental to our decision-making', score: 4 }
     ]
   },
   {
@@ -224,10 +227,10 @@ export const QUESTIONS: Question[] = [
     category: 'culture',
     text: 'How do teams collaborate on experiments?',
     options: [
-      'Teams work independently',
-      'There\'s some cross-team communication',
-      'We have regular cross-functional collaboration',
-      'We have integrated experimentation workflows'
+      { text: 'Teams work independently', score: 1 },
+      { text: 'There\'s some cross-team communication', score: 2 },
+      { text: 'We have regular cross-functional collaboration', score: 3 },
+      { text: 'We have integrated experimentation workflows', score: 4 }
     ]
   },
   {
@@ -235,10 +238,10 @@ export const QUESTIONS: Question[] = [
     category: 'culture',
     text: 'How do you handle experiment-related conflicts?',
     options: [
-      'Through management escalation',
-      'Through informal discussion',
-      'Through structured resolution processes',
-      'Through data-driven decision frameworks'
+      { text: 'Through management escalation', score: 1 },
+      { text: 'Through informal discussion', score: 2 },
+      { text: 'Through structured resolution processes', score: 3 },
+      { text: 'Through data-driven decision frameworks', score: 4 }
     ]
   },
   {
@@ -246,10 +249,10 @@ export const QUESTIONS: Question[] = [
     category: 'culture',
     text: 'How do you approach experimentation training?',
     options: [
-      'We learn on the job',
-      'We provide basic onboarding',
-      'We have regular training sessions',
-      'We have comprehensive development programs'
+      { text: 'We learn on the job', score: 1 },
+      { text: 'We provide basic onboarding', score: 2 },
+      { text: 'We have regular training sessions', score: 3 },
+      { text: 'We have comprehensive development programs', score: 4 }
     ]
   },
   {
@@ -257,10 +260,10 @@ export const QUESTIONS: Question[] = [
     category: 'culture',
     text: 'How do you celebrate experimentation?',
     options: [
-      'We don\'t specifically celebrate experiments',
-      'We informally acknowledge successes',
-      'We regularly recognize achievements',
-      'We have formal recognition programs'
+      { text: 'We don\'t specifically celebrate experiments', score: 1 },
+      { text: 'We informally acknowledge successes', score: 2 },
+      { text: 'We regularly recognize achievements', score: 3 },
+      { text: 'We have formal recognition programs', score: 4 }
     ]
   },
   {
@@ -268,10 +271,10 @@ export const QUESTIONS: Question[] = [
     category: 'culture',
     text: 'How do you handle resistance to experimentation?',
     options: [
-      'We avoid confronting resistance',
-      'We try to address concerns as they arise',
-      'We proactively address common objections',
-      'We have change management processes'
+      { text: 'We avoid confronting resistance', score: 1 },
+      { text: 'We try to address concerns as they arise', score: 2 },
+      { text: 'We proactively address common objections', score: 3 },
+      { text: 'We have change management processes', score: 4 }
     ]
   }
 ]; 

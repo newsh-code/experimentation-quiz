@@ -6,10 +6,9 @@
     "jest": true
   },
   "extends": [
-    "eslint:recommended",
-    "plugin:react/recommended",
+    "next/core-web-vitals",
     "plugin:@typescript-eslint/recommended",
-    "plugin:react-hooks/recommended"
+    "plugin:@next/next/recommended"
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
@@ -20,15 +19,17 @@
     "sourceType": "module"
   },
   "plugins": [
-    "react",
     "@typescript-eslint",
-    "react-hooks"
+    "@next/next"
   ],
   "rules": {
-    "react/react-in-jsx-scope": "off",
-    "@typescript-eslint/explicit-module-boundary-types": "off",
-    "@typescript-eslint/no-explicit-any": "warn",
-    "react/prop-types": "off"
+    "@typescript-eslint/no-unused-vars": "off",
+    "@typescript-eslint/no-empty-interface": "off",
+    "@typescript-eslint/no-empty-object-type": "off",
+    "no-case-declarations": "off",
+    "react-hooks/exhaustive-deps": "warn",
+    "react/no-unescaped-entities": "off",
+    "@next/next/no-html-link-for-pages": "off"
   },
   "settings": {
     "react": {

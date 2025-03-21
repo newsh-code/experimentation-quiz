@@ -33,8 +33,8 @@ export class ErrorBoundary extends React.Component<Props, State> {
             <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
               Something went wrong
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-8">
-              We're sorry, but there was an error loading this page.
+            <p className="text-muted-foreground">
+              We&apos;re sorry, but there was an error loading this page.
             </p>
             <Link 
               href="/"

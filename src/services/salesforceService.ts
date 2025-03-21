@@ -3,7 +3,7 @@ import { QuizState } from '../context/QuizContext';
 interface SalesforceLeadData {
   FirstName?: string;
   LastName: string;
-  Company: string;
+  Company?: string;
   Email: string;
   Description: string;
   LeadSource: string;
@@ -19,24 +19,28 @@ interface SalesforceLeadData {
 export async function createSalesforceLead(state: QuizState): Promise<void> {
   if (!state.email || !state.userData) return;
 
-  const [firstName, ...lastNameParts] = state.userData.name.split(' ');
+  const name = (state.userData.name ?? 'Unknown') as string;
+  const [firstName, ...lastNameParts] = name.split(' ');
   const lastName = lastNameParts.join(' ') || 'Unknown';
+
+  // Calculate overall score as average of category scores
+  const overallScore = Object.values(state.scores).reduce((sum, score) => sum + score, 0) / Object.keys(state.scores).length;
 
   const leadData: SalesforceLeadData = {
     FirstName: firstName,
     LastName: lastName || 'Unknown',
-    Company: state.userData.company,
+    Company: state.userData.company || 'Not Provided',
     Email: state.email,
     Description: `Experimentation Maturity Assessment Results:\n` +
-      `Overall Score: ${Math.round(state.scores.overall)}%\n` +
+      `Overall Score: ${Math.round(overallScore)}%\n` +
       `Process Score: ${Math.round(state.scores.process)}%\n` +
       `Strategy Score: ${Math.round(state.scores.strategy)}%\n` +
       `Insight Score: ${Math.round(state.scores.insight)}%\n` +
       `Culture Score: ${Math.round(state.scores.culture)}%`,
     LeadSource: 'Experimentation Maturity Assessment',
-    Rating: getRating(state.scores.overall),
+    Rating: getRating(overallScore),
     Status: 'Open - Not Contacted',
-    ExperimentationScore__c: Math.round(state.scores.overall),
+    ExperimentationScore__c: Math.round(overallScore),
     ProcessScore__c: Math.round(state.scores.process),
     StrategyScore__c: Math.round(state.scores.strategy),
     InsightScore__c: Math.round(state.scores.insight),

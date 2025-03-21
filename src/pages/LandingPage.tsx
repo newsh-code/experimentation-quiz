@@ -17,11 +17,26 @@ export default function LandingPage() {
   const { dispatch } = useQuiz();
   const router = useRouter();
 
-  const handleStartQuiz = () => {
-    dispatch({ type: 'START_QUIZ' });
-    router.push('/quiz').catch(error => {
-      console.error('Navigation error:', error);
-    });
+  const handleStartQuiz = async () => {
+    console.log('Starting quiz from landing page...');
+    
+    try {
+      // Reset quiz state before starting
+      console.log('Resetting quiz state...');
+      dispatch({ type: 'RESET_QUIZ' });
+      
+      // Start the quiz
+      console.log('Dispatching START_QUIZ...');
+      dispatch({ type: 'START_QUIZ' });
+      
+      // Navigate to quiz page
+      console.log('Navigating to quiz page...');
+      await router.push('/quiz');
+    } catch (error) {
+      console.error('Error starting quiz:', error);
+      // Reset state if navigation fails
+      dispatch({ type: 'RESET_QUIZ' });
+    }
   };
 
   return (
@@ -142,6 +157,10 @@ export default function LandingPage() {
               </motion.div>
             ))}
           </motion.div>
+
+          <p className="text-muted-foreground mb-8">
+            We&apos;ll help you understand your experimentation style and provide personalized recommendations.
+          </p>
         </motion.div>
       </div>
     </div>

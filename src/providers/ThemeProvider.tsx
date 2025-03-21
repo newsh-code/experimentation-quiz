@@ -1,24 +1,11 @@
-import { createContext, useContext, useEffect, useState } from "react"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
-import { type ThemeProviderProps } from "next-themes/dist/types"
 
-export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return null
-  }
-
+export function ThemeProvider({ children, ...props }: { children: React.ReactNode }) {
   return (
     <NextThemesProvider
       attribute="class"
       defaultTheme="system"
       enableSystem
-      disableTransitionOnChange
       {...props}
     >
       {children}

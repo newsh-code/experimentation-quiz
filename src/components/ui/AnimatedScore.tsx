@@ -85,10 +85,6 @@ export function AnimatedScore({
             "[&>div]:h-full [&>div]:rounded-full",
             getScoreColor(currentScore)
           )}
-          indicatorClassName={cn(
-            "transition-all duration-1000 ease-out",
-            getScoreColor(currentScore)
-          )}
         />
       </div>
 

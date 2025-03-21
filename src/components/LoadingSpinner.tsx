@@ -1,21 +1,20 @@
 import React from 'react';
 
 interface LoadingSpinnerProps {
-  size?: 'sm' | 'md' | 'lg';
-  color?: string;
+  size?: "small" | "default" | "large";
 }
 
-export function LoadingSpinner({ size = 'md', color = '#2563EB' }: LoadingSpinnerProps) {
-  const sizeMap = {
-    sm: 'w-4 h-4',
-    md: 'w-8 h-8',
-    lg: 'w-12 h-12',
+export function LoadingSpinner({ size = "default" }: LoadingSpinnerProps) {
+  const sizeClasses = {
+    small: "w-4 h-4",
+    default: "w-8 h-8",
+    large: "w-12 h-12",
   };
 
   return (
     <div className="flex items-center justify-center">
       <svg
-        className={`animate-spin ${sizeMap[size]}`}
+        className={`animate-spin ${sizeClasses[size]}`}
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"

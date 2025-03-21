@@ -17,4 +17,14 @@ export interface Scores {
 export interface QuizState {
   scores: Scores;
   isQuizComplete: boolean;
-} 
+}
+
+export type Question = {
+  id: string;
+  text: string;
+  category: CategoryKey;
+  options: Array<{
+    text: string;
+    score: number;
+  }>;
+}; 

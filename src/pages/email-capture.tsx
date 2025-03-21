@@ -169,7 +169,7 @@ export default function EmailCapturePage() {
                   >
                     {isGeneratingPDF ? (
                       <div className="flex items-center justify-center space-x-2">
-                        <LoadingSpinner size="sm" />
+                        <LoadingSpinner size="small" />
                         <span>Generating Report...</span>
                       </div>
                     ) : (

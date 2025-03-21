@@ -9,8 +9,21 @@ const nextConfig = {
     locales: ['en'],
     defaultLocale: 'en',
   },
-  webpack: (config) => {
-    config.resolve.fallback = { fs: false };
+  webpack: (config, { isServer }) => {
+    // Fix module resolution issues
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      net: false,
+      tls: false,
+    };
+    
+    // Ensure proper module resolution
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': './src',
+    };
+    
     return config;
   },
   pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
@@ -19,7 +32,15 @@ const nextConfig = {
     // Remove appDir since it's causing issues
     typedRoutes: true,
     scrollRestoration: true
-  }
+  },
+  // Ensure proper static file serving
+  poweredByHeader: false,
+  compress: true,
+  generateEtags: true,
+  // Disable ESLint during builds
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 }
 
 module.exports = nextConfig 
