@@ -9,6 +9,8 @@ on:
 # Add permissions for release creation
 permissions:
   contents: write
+  issues: write
+  pull-requests: write
 
 jobs:
   build:
@@ -46,6 +48,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
     - name: Use Node.js
       uses: actions/setup-node@v4
@@ -67,7 +71,7 @@ jobs:
     
     - name: Create Release
       id: create_release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -75,4 +79,5 @@ jobs:
         name: Release v${{ github.run_number }}
         draft: false
         prerelease: false
-        files: extension.zip 
+        files: extension.zip
+        generate_release_notes: true 
