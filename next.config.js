@@ -9,19 +9,13 @@ const nextConfig = {
     locales: ['en'],
     defaultLocale: 'en',
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config) => {
     // Fix module resolution issues
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
       net: false,
       tls: false,
-    };
-    
-    // Ensure proper module resolution
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@': './src',
     };
     
     return config;

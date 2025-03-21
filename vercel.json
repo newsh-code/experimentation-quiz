@@ -7,5 +7,9 @@
   "eslint": {
     "ignoreDuringBuilds": true
   },
-  "version": 2
+  "version": 2,
+  "regions": ["iad1"],
+  "env": {
+    "NODE_ENV": "production"
+  }
 } 
