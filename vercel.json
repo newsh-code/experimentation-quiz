@@ -7,14 +7,5 @@
   "eslint": {
     "ignoreDuringBuilds": true
   },
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/node",
-      "config": {
-        "nodeVersion": "18.17.0"
-      }
-    }
-  ]
+  "version": 2
 } 
