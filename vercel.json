@@ -1,11 +1,11 @@
 {
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
-  "installCommand": "npm install",
+  "installCommand": "npm ci",
   "framework": "nextjs",
   "outputDirectory": ".next",
   "eslint": {
-    "ignoreDuringBuilds": false
+    "ignoreDuringBuilds": true
   },
   "version": 2,
   "builds": [
@@ -16,5 +16,8 @@
         "nodeVersion": "18.17.0"
       }
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 } 

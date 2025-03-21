@@ -41,6 +41,12 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Add Vercel-specific optimizations
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+  // Ensure proper static file serving
+  assetPrefix: process.env.NODE_ENV === 'production' ? undefined : '',
 }
 
 module.exports = nextConfig 
