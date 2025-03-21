@@ -2,8 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  output: 'standalone',
   images: {
     domains: ['images.unsplash.com'],
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60,
   },
   i18n: {
     locales: ['en'],
@@ -29,9 +32,10 @@ const nextConfig = {
   pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
   distDir: '.next',
   experimental: {
-    // Remove appDir since it's causing issues
     typedRoutes: true,
-    scrollRestoration: true
+    scrollRestoration: true,
+    optimizeCss: true,
+    serverActions: true,
   },
   // Ensure proper static file serving
   poweredByHeader: false,
@@ -47,6 +51,39 @@ const nextConfig = {
   },
   // Ensure proper static file serving
   assetPrefix: process.env.NODE_ENV === 'production' ? undefined : '',
+  // Production optimizations
+  productionBrowserSourceMaps: false,
+  optimizeFonts: true,
+  // Add headers for security and caching
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on'
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains'
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN'
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'origin-when-cross-origin'
+          }
+        ]
+      }
+    ]
+  }
 }
 
 module.exports = nextConfig 
