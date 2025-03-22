@@ -33,87 +33,128 @@ type QuizAction =
   | { type: 'RESET_QUIZ' }
   | { type: 'SUBMIT_EMAIL'; email: string; userData: UserData }
   | { type: 'SKIP_EMAIL' }
+  | { type: 'SET_QUESTIONS'; questions: Question[] }
 
 function quizReducer(state: QuizState, action: QuizAction): QuizState {
-  // Add structured debug logging
-  console.log('Quiz State Update:', {
+  // Improved debug logging
+  console.group('Quiz State Update');
+  console.log('Action:', JSON.stringify(action, null, 2));
+  console.log('Current State:', JSON.stringify({
     action: action.type,
-    currentState: {
-      isLoading: state.isLoading,
-      isComplete: state.isComplete,
-      currentQuestion: state.currentQuestion,
-      answersCount: Object.keys(state.answers).length,
-      categoryScores: state.categoryScores
-    }
-  });
+    isLoading: state.isLoading,
+    currentQuestion: state.currentQuestion,
+    questionsCount: state.questions.length,
+    answersCount: Object.keys(state.answers).length,
+    isComplete: state.isComplete,
+    questions: state.questions.map(q => ({ id: q.id, text: q.text.substring(0, 30) + '...' }))
+  }, null, 2));
+  console.groupEnd();
 
   switch (action.type) {
-    case 'START_QUIZ':
-      // Prevent multiple starts if quiz is already in progress
-      if (!state.isLoading && state.currentQuestion === 0) {
-        console.log('Starting new quiz...');
+    case 'START_QUIZ': {
+      // Validate questions before starting
+      if (!Array.isArray(state.questions) || state.questions.length === 0) {
+        console.error('Cannot start quiz: Questions not loaded');
         return {
           ...state,
-          isLoading: true,
-          isComplete: false,
-          currentQuestion: 0,
-          answers: {},
-          categoryScores: {
-            process: 0,
-            strategy: 0,
-            insight: 0,
-            culture: 0
-          },
-          categoryPercentages: {
-            process: 0,
-            strategy: 0,
-            insight: 0,
-            culture: 0
-          },
-          percentageScore: 0
+          isLoading: true // Keep loading if no questions
         };
       }
-      console.log('Quiz already in progress, ignoring START_QUIZ');
-      return state;
 
-    case 'ANSWER_QUESTION':
-      // Validate question ID and answer
+      // Prevent starting if already in progress
+      if (!state.isLoading && Object.keys(state.answers).length > 0) {
+        console.warn('Quiz already in progress');
+        return state;
+      }
+
+      console.log('Starting quiz with questions:', JSON.stringify({
+        questionCount: state.questions.length,
+        firstQuestion: state.questions[0]
+      }, null, 2));
+
+      return {
+        ...state,
+        currentQuestion: 0,
+        answers: {},
+        categoryScores: {
+          process: 0,
+          strategy: 0,
+          insight: 0,
+          culture: 0
+        },
+        categoryPercentages: {
+          process: 0,
+          strategy: 0,
+          insight: 0,
+          culture: 0
+        },
+        scores: {
+          process: 0,
+          strategy: 0,
+          insight: 0,
+          culture: 0
+        },
+        totalScore: undefined,
+        percentageScore: undefined,
+        isComplete: false,
+        isLoading: false // Set to false only after validation
+      };
+    }
+
+    case 'ANSWER_QUESTION': {
+      // Enhanced validation logging
+      console.group('Answer Question Validation');
+      console.log('Questions Array:', JSON.stringify({
+        length: state.questions.length,
+        currentQuestion: state.currentQuestion,
+        questionExists: state.questions[state.currentQuestion] !== undefined
+      }, null, 2));
+
+      // Validate state before processing answer
+      if (state.isLoading) {
+        console.warn('Cannot answer question while loading');
+        console.groupEnd();
+        return state;
+      }
+
+      if (!Array.isArray(state.questions) || state.questions.length === 0) {
+        console.error('Cannot answer question: No questions available');
+        console.groupEnd();
+        return state;
+      }
+
       const questionId = action.questionId;
       const answer = action.answer;
-      
-      if (questionId === undefined || answer === undefined) {
-        console.error('Invalid answer data:', { questionId, answer });
+      const questionIndex = parseInt(questionId);
+
+      // Validate question index
+      if (isNaN(questionIndex) || questionIndex < 0 || questionIndex >= state.questions.length) {
+        console.error('Invalid question index:', JSON.stringify({
+          questionId,
+          questionsLength: state.questions.length
+        }, null, 2));
+        console.groupEnd();
         return state;
       }
 
-      // Get the question to validate the answer
-      const question = state.questions.find(q => q.id.toString() === questionId);
+      const question = state.questions[questionIndex];
       if (!question) {
-        console.error('Question not found:', questionId);
+        console.error('Question not found:', JSON.stringify({
+          questionId,
+          questionsLength: state.questions.length,
+          questions: state.questions.map(q => q.id)
+        }, null, 2));
+        console.groupEnd();
         return state;
       }
 
-      // Validate answer is within valid range
-      if (answer < 0 || answer >= question.options.length) {
-        console.error('Invalid answer value:', { questionId, answer, optionsLength: question.options.length });
-        return state;
-      }
+      console.groupEnd();
 
-      // Update answer and calculate category score
+      // Process answer
       const newAnswers = { ...state.answers, [questionId]: answer };
       const newCategoryScores = { ...state.categoryScores };
       const optionScore = question.options[answer].score;
-      
-      // Update category score
       newCategoryScores[question.category] = (newCategoryScores[question.category] || 0) + optionScore;
-
-      console.log('Updating answer:', {
-        questionId,
-        answer,
-        score: optionScore,
-        category: question.category,
-        newCategoryScore: newCategoryScores[question.category]
-      });
 
       return {
         ...state,
@@ -121,6 +162,29 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
         categoryScores: newCategoryScores,
         isLoading: false
       };
+    }
+
+    case 'NEXT_QUESTION': {
+      if (state.currentQuestion >= state.questions.length - 1) {
+        console.warn('Already at last question');
+        return state;
+      }
+      return {
+        ...state,
+        currentQuestion: state.currentQuestion + 1
+      };
+    }
+
+    case 'PREVIOUS_QUESTION': {
+      if (state.currentQuestion <= 0) {
+        console.warn('Already at first question');
+        return state;
+      }
+      return {
+        ...state,
+        currentQuestion: state.currentQuestion - 1
+      };
+    }
 
     case 'COMPLETE_QUIZ':
       // Validate all questions are answered
@@ -200,26 +264,16 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
       };
 
     case 'RESET_QUIZ':
-      console.log('Resetting quiz state');
+      return {
+        ...initialState,
+        questions: state.questions, // Preserve loaded questions
+        isLoading: false
+      };
+
+    case 'SET_QUESTIONS':
       return {
         ...state,
-        isLoading: false,
-        isComplete: false,
-        currentQuestion: 0,
-        answers: {},
-        categoryScores: {
-          process: 0,
-          strategy: 0,
-          insight: 0,
-          culture: 0
-        },
-        categoryPercentages: {
-          process: 0,
-          strategy: 0,
-          insight: 0,
-          culture: 0
-        },
-        percentageScore: 0
+        questions: action.questions
       };
 
     default:
@@ -249,12 +303,66 @@ const initialState: QuizState = {
   totalScore: undefined,
   percentageScore: undefined,
   isComplete: false,
-  isLoading: false,
-  questions: []
+  isLoading: true,
+  questions: QUESTIONS // Initialize with questions immediately
 };
 
 export function QuizProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(quizReducer, initialState);
+
+  // Initialize questions and validate state
+  useEffect(() => {
+    console.group('Quiz Provider Initialization');
+    console.log('Questions Status:', JSON.stringify({
+      questionsAvailable: QUESTIONS.length > 0,
+      questionsCount: QUESTIONS.length,
+      firstQuestion: QUESTIONS[0],
+      stateQuestionsCount: state.questions.length,
+      currentQuestion: state.currentQuestion,
+      isLoading: state.isLoading
+    }, null, 2));
+
+    // Ensure questions are loaded
+    if (QUESTIONS.length > 0 && (!state.questions.length || state.questions !== QUESTIONS)) {
+      console.log('Initializing questions array');
+      dispatch({ type: 'SET_QUESTIONS', questions: QUESTIONS });
+    }
+
+    // Start quiz only if not already started
+    if (!state.isLoading && Object.keys(state.answers).length === 0) {
+      console.log('Starting new quiz');
+      dispatch({ type: 'START_QUIZ' });
+    }
+    
+    console.groupEnd();
+  }, [state.questions, state.isLoading, state.answers]);
+
+  // Debug log for questions availability
+  useEffect(() => {
+    if (state.currentQuestion >= 0) {
+      console.group('Question Access Validation');
+      console.log('Current Question Status:', JSON.stringify({
+        currentQuestionIndex: state.currentQuestion,
+        questionsCount: state.questions.length,
+        questionExists: state.questions[state.currentQuestion] !== undefined,
+        currentQuestionData: state.questions[state.currentQuestion],
+        isLoading: state.isLoading
+      }, null, 2));
+      console.groupEnd();
+    }
+  }, [state.questions, state.currentQuestion, state.isLoading]);
+
+  // Prevent invalid current question
+  useEffect(() => {
+    if (state.currentQuestion >= state.questions.length) {
+      console.error('Invalid question index detected:', JSON.stringify({
+        currentQuestion: state.currentQuestion,
+        questionsLength: state.questions.length,
+        isLoading: state.isLoading
+      }, null, 2));
+      dispatch({ type: 'RESET_QUIZ' });
+    }
+  }, [state.currentQuestion, state.questions.length, state.isLoading]);
 
   // Log only meaningful state changes
   useEffect(() => {
