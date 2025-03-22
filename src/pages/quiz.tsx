@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuiz } from '../context/QuizContext';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -16,131 +16,69 @@ export default function QuizPage() {
   const router = useRouter();
   const [selectedValue, setSelectedValue] = useState<number | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [questionsLoaded, setQuestionsLoaded] = useState(false);
-  const [hasInitialized, setHasInitialized] = React.useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   
-  const currentQuestion = state.currentQuestion < QUESTIONS.length 
-    ? QUESTIONS[state.currentQuestion] 
-    : null;
-  const isLastQuestion = state.currentQuestion === QUESTIONS.length - 1;
+  // Memoize current question to prevent unnecessary re-renders
+  const currentQuestion = useMemo(() => {
+    if (!Array.isArray(state.questions) || state.questions.length === 0) {
+      return null;
+    }
+    return state.questions[state.currentQuestion] || null;
+  }, [state.questions, state.currentQuestion]);
 
+  const isLastQuestion = useMemo(() => 
+    state.currentQuestion === state.questions.length - 1,
+    [state.currentQuestion, state.questions.length]
+  );
+
+  // Single initialization effect
   useEffect(() => {
-    console.log('Quiz Page Mount:', {
-      state: {
-        isLoading: state.isLoading,
-        currentQuestion: state.currentQuestion,
-        answersCount: Object.keys(state.answers).length,
-        isComplete: state.isComplete,
-        questionsLoaded: state.questions?.length > 0,
-        hasInitialized
-      }
-    });
-
-    // Only initialize once when the page first loads and no answers exist
-    if (!hasInitialized && !state.isLoading && Object.keys(state.answers).length === 0 && state.questions?.length > 0) {
-      console.log('Quiz Initialization:', {
-        previousState: {
-          hasInitialized,
-          isLoading: state.isLoading,
-          answersCount: Object.keys(state.answers).length,
-          questionsLength: state.questions.length
-        }
-      });
-      
-      // Set initialized flag first to prevent race conditions
+    if (!hasInitialized && !state.isLoading && state.questions.length > 0) {
       setHasInitialized(true);
-      
-      // Add a small delay to ensure state is synchronized
-      const timer = setTimeout(() => {
-        if (!state.isLoading && Object.keys(state.answers).length === 0) {
-          dispatch({ type: 'START_QUIZ' });
-        }
-      }, 100);
-      
-      return () => {
-        console.log('Cleaning up initialization timer');
-        clearTimeout(timer);
-      };
     }
-  }, [dispatch, state.isLoading, state.answers, state.isComplete, state.questions, hasInitialized, state.currentQuestion, setHasInitialized]);
+  }, [hasInitialized, state.isLoading, state.questions.length]);
 
-  // Handle loading state transition
+  // Error boundary effect
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    if (hasInitialized && (!state.questions.length || state.currentQuestion >= state.questions.length)) {
+      router.push('/');
+    }
+  }, [hasInitialized, state.questions.length, state.currentQuestion, router]);
+
+  const handleAnswer = useCallback(async (value: number) => {
+    if (isSubmitting || !currentQuestion) return;
+
+    setIsSubmitting(true);
+    try {
+      dispatch({
+        type: 'ANSWER_QUESTION',
+        questionId: state.currentQuestion.toString(),
+        answer: value,
+      });
+
+      setSelectedValue(value);
+
+      // Move to next question after a brief delay
+      if (!isLastQuestion) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        dispatch({ type: 'NEXT_QUESTION' });
+        setSelectedValue(undefined);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [dispatch, isLastQuestion, isSubmitting, state.currentQuestion, currentQuestion]);
+
+  const handleSeeScoreClick = useCallback(async () => {
+    if (isSubmitting) return;
     
-    if (state.isLoading) {
-      console.log('Loading State Transition:', {
-        state: {
-          isLoading: state.isLoading,
-          questionsLength: state.questions?.length,
-          currentQuestion: state.currentQuestion
-        }
-      });
-      
-      if (state.questions?.length > 0) {
-        timer = setTimeout(() => {
-          console.log('Loading Timer Complete:', {
-            state: {
-              isLoading: state.isLoading,
-              currentQuestion: state.currentQuestion
-            }
-          });
-          dispatch({ type: 'ANSWER_QUESTION', questionId: '0', answer: 0 });
-        }, 500);
-      } else {
-        console.error('Quiz Error: No questions available during loading transition', {
-          state: {
-            isLoading: state.isLoading,
-            questionsLength: state.questions?.length
-          }
-        });
-        dispatch({ type: 'RESET_QUIZ' });
-        router.push('/');
-      }
+    setIsSubmitting(true);
+    try {
+      await router.push('/results');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    return () => {
-      if (timer) {
-        console.log('Loading Timer Cleanup');
-        clearTimeout(timer);
-      }
-    };
-  }, [state.isLoading, dispatch, state.questions, router, state.currentQuestion]);
-
-  // Add error boundary for invalid states
-  useEffect(() => {
-    if (!state.questions?.length) {
-      console.error('No questions available:', {
-        currentQuestion: state.currentQuestion,
-        isLoading: state.isLoading
-      });
-      dispatch({ type: 'RESET_QUIZ' });
-      router.push('/');
-      return;
-    }
-
-    if (state.currentQuestion >= state.questions.length) {
-      console.error('Invalid question index detected:', {
-        currentQuestion: state.currentQuestion,
-        totalQuestions: state.questions.length,
-        isLoading: state.isLoading
-      });
-      dispatch({ type: 'RESET_QUIZ' });
-      router.push('/');
-    }
-  }, [state.currentQuestion, state.questions, dispatch, router, state.isLoading]);
-
-  // Log state changes
-  useEffect(() => {
-    console.log('Quiz state updated:', {
-      currentQuestionIndex: state.currentQuestion,
-      totalQuestions: state.questions?.length ?? 0,
-      isComplete: state.isComplete,
-      answersCount: Object.keys(state.answers).length,
-      isLoading: state.isLoading,
-      currentQuestion: state.questions?.[state.currentQuestion]
-    });
-  }, [state.currentQuestion, state.answers, state.isComplete, state.isLoading, state.questions]);
+  }, [router, isSubmitting]);
 
   const getProgressPhrase = (progress: number, isLastQuestionAnswered: boolean) => {
     if (isLastQuestionAnswered && progress === 100) {
@@ -161,187 +99,6 @@ export default function QuizPage() {
   const progress = (state.currentQuestion / QUESTIONS.length) * 100;
   const isLastQuestionAnswered = state.answers[QUESTIONS.length - 1] !== undefined;
   const progressPhrase = getProgressPhrase(progress, isLastQuestionAnswered);
-
-  const handleAnswer = useCallback(async (value: number) => {
-    if (!state.questions?.length || isSubmitting) {
-      console.error('Cannot submit answer:', {
-        hasQuestions: !!state.questions?.length,
-        isSubmitting
-      });
-      return;
-    }
-
-    const currentQuestion = state.questions[state.currentQuestion];
-    if (!currentQuestion) {
-      console.error('No current question available');
-      return;
-    }
-
-    if (value < 0 || value >= currentQuestion.options.length) {
-      console.error('Invalid answer value:', {
-        value,
-        optionsLength: currentQuestion.options.length,
-        questionIndex: state.currentQuestion
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      console.log('Submitting answer:', {
-        questionIndex: state.currentQuestion,
-        answer: value,
-        score: currentQuestion.options[value].score,
-        isLoading: state.isLoading,
-        questionsLength: state.questions.length
-      });
-
-      // Update selected value
-      setSelectedValue(value);
-
-      // First update the answer
-      dispatch({
-        type: 'ANSWER_QUESTION',
-        questionId: state.currentQuestion.toString(),
-        answer: value,
-      });
-
-      // Then move to next question after a short delay
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      if (!isLastQuestion) {
-        console.log('Moving to next question');
-        dispatch({ type: 'NEXT_QUESTION' });
-        // Reset selected value for next question
-        setSelectedValue(undefined);
-      } else {
-        console.log('Last question answered, enabling See My Score button');
-        // Keep the selected value for the last question
-      }
-    } catch (error) {
-      console.error('Error submitting answer:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [dispatch, isLastQuestion, isSubmitting, state.currentQuestion, state.isLoading, state.questions, setSelectedValue, setIsSubmitting]);
-
-  const handleSeeScoreClick = useCallback(async () => {
-    if (isSubmitting) return;
-    
-    try {
-      setIsSubmitting(true);
-      console.log('Starting quiz completion...', {
-        currentState: {
-          answers: state.answers,
-          categoryScores: state.categoryScores,
-          isComplete: state.isComplete
-        }
-      });
-      
-      // First validate we have all answers
-      const hasAllAnswers = Object.keys(state.answers).length === QUESTIONS.length;
-      
-      if (!hasAllAnswers) {
-        console.error('Quiz completion failed: Not all questions answered');
-        return;
-      }
-      
-      // Dispatch complete action
-      dispatch({ type: 'COMPLETE_QUIZ' });
-      
-      // Wait for state update
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Navigate to email capture page
-      console.log('Navigating to email capture page...');
-      await router.push('/email-capture');
-      
-    } catch (error) {
-      console.error('Error completing quiz:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [dispatch, isSubmitting, state.answers, state.categoryScores, state.isComplete, router]);
-
-  // Add navigation guard with navigation tracking
-  useEffect(() => {
-    const navigationAttempt = async () => {
-      if (state.isComplete && !isSubmitting) {
-        console.group('Navigation Guard');
-        console.log('Quiz completion detected:', {
-          isComplete: state.isComplete,
-          answersCount: Object.keys(state.answers).length,
-          currentQuestion: state.currentQuestion
-        });
-        
-        try {
-          await router.push('/email-capture');
-          console.log('Navigation successful');
-        } catch (error) {
-          console.error('Navigation failed:', error);
-        }
-        
-        console.groupEnd();
-      }
-    };
-    
-    navigationAttempt();
-  }, [state.isComplete, router, state.answers, state.currentQuestion, isSubmitting]);
-
-  // Optimize initialization effect
-  useEffect(() => {
-    if (!hasInitialized && !state.isLoading && Object.keys(state.answers).length === 0) {
-      console.group('Quiz Initialization');
-      console.log('Starting quiz...');
-      
-      setHasInitialized(true);
-      dispatch({ type: 'START_QUIZ' });
-      
-      console.groupEnd();
-    }
-  }, [dispatch, state.isLoading, state.answers, hasInitialized]);
-
-  // Optimize loading state transition
-  useEffect(() => {
-    if (state.isLoading) {
-      console.group('Loading State');
-      console.log('Loading quiz...');
-      
-      const timer = setTimeout(() => {
-        dispatch({ type: 'ANSWER_QUESTION', questionId: '0', answer: 0 });
-        console.log('Loading complete');
-      }, 500);
-      
-      console.groupEnd();
-      return () => clearTimeout(timer);
-    }
-  }, [state.isLoading, dispatch]);
-
-  // Optimize state validation
-  useEffect(() => {
-    const validateState = () => {
-      if (!QUESTIONS.length) {
-        console.error('No questions available');
-        dispatch({ type: 'RESET_QUIZ' });
-        router.push('/');
-        return;
-      }
-
-      if (state.currentQuestion >= QUESTIONS.length) {
-        console.error('Invalid question index');
-        dispatch({ type: 'RESET_QUIZ' });
-        router.push('/');
-      }
-    };
-
-    validateState();
-  }, [state.currentQuestion, dispatch, router]);
-
-  // Update selected value when navigating between questions
-  useEffect(() => {
-    const currentAnswer = state.answers[state.currentQuestion];
-    setSelectedValue(currentAnswer);
-  }, [state.currentQuestion, state.answers]);
 
   // Remove unnecessary logging effects
   
@@ -366,11 +123,6 @@ export default function QuizPage() {
       behavior: 'smooth'
     });
   }, [state.currentQuestion]);
-
-  // Questions loaded check
-  useEffect(() => {
-    setQuestionsLoaded(QUESTIONS.length > 0);
-  }, []);
 
   const handlePrevious = useCallback(() => {
     if (state.currentQuestion > 0) {
@@ -424,49 +176,13 @@ export default function QuizPage() {
     };
   }, [debouncedHandleKeyPress]);
 
-  if (!questionsLoaded) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="fixed top-4 right-4 z-50">
-          <ThemeToggle />
-        </div>
-        <div className="text-center space-y-4">
-          <LoadingSpinner size="large" />
-          <p className="text-lg text-muted-foreground animate-pulse">
-            Loading questions...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (state.isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="fixed top-4 right-4 z-50">
-          <ThemeToggle />
-        </div>
-        <div className="text-center space-y-4">
-          <LoadingSpinner size="large" />
-          <p className="text-lg text-muted-foreground animate-pulse">
-            Preparing your quiz...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
+  // Loading state
   if (!currentQuestion) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="fixed top-4 right-4 z-50">
-          <ThemeToggle />
-        </div>
-        <div className="text-center space-y-4">
-          <LoadingSpinner size="large" />
-          <p className="text-lg text-muted-foreground animate-pulse">
-            Loading questions...
-          </p>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Loading Quiz...</h1>
+          <p>Please wait while we prepare your questions.</p>
         </div>
       </div>
     );
