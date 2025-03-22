@@ -21,10 +21,8 @@ const nextConfig = {
     return config;
   },
   pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
-  distDir: '.next',
   experimental: {
     typedRoutes: true,
-    scrollRestoration: true,
   },
   // Disable ESLint during builds
   eslint: {
