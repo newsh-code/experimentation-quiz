@@ -299,7 +299,7 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
         }
         
         // Calculate percentage and round to 2 decimal places
-        const categoryPercentage = Math.round((score / maxCategoryScore) * 100 * 100) / 100;
+        const categoryPercentage = Math.round((score / maxCategoryScore) * 100);
         
         console.log(`Category ${categoryKey} calculation:`, {
           score,
@@ -319,7 +319,7 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
 
       // Calculate final score as average of category percentages and round to whole number
       const finalPercentageScore = Math.round(
-        Object.values(categoryPercentages).reduce((sum, percentage) => sum + percentage, 0) / requiredCategories.length
+        Object.values(categoryPercentages).reduce((sum, percentage) => sum + percentage, 0) / Object.keys(categoryPercentages).length
       );
 
       console.log('Quiz completion calculations:', {
@@ -335,11 +335,9 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
       // Return new state with all required fields
       return {
         ...state,
-        isComplete: true,
         categoryPercentages,
-        scores: state.categoryScores,
-        totalScore: Object.values(state.categoryScores).reduce((sum, score) => sum + score, 0),
-        percentageScore: finalPercentageScore
+        percentageScore: finalPercentageScore,
+        isComplete: true
       };
     }
     case 'RESET_QUIZ': {

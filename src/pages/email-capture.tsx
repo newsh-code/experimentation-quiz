@@ -101,12 +101,8 @@ export default function EmailCapturePage() {
             </p>
           </motion.div>
 
-          <Card className="border border-border/50 shadow-lg">
-            <CardHeader className="border-b border-border/10 pb-8">
-              <h2 className="text-2xl font-semibold text-center">Your Report Details</h2>
-            </CardHeader>
-
-            <CardContent className="pt-8">
+          <Card className="bg-card/50 backdrop-blur-sm border-2">
+            <CardContent className="pt-6">
               <motion.form 
                 variants={fadeInUp} 
                 onSubmit={handleSubmit} 

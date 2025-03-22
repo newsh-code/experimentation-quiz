@@ -468,7 +468,7 @@ export default function QuizPage() {
   if (!questionsLoaded) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="absolute top-4 right-4">
+        <div className="fixed top-4 right-4 z-50">
           <ThemeToggle />
         </div>
         <div className="text-center space-y-4">
@@ -484,7 +484,7 @@ export default function QuizPage() {
   if (state.isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="absolute top-4 right-4">
+        <div className="fixed top-4 right-4 z-50">
           <ThemeToggle />
         </div>
         <div className="text-center space-y-4">
@@ -500,7 +500,7 @@ export default function QuizPage() {
   if (!currentQuestion) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="absolute top-4 right-4">
+        <div className="fixed top-4 right-4 z-50">
           <ThemeToggle />
         </div>
         <div className="text-center space-y-4">
@@ -515,7 +515,7 @@ export default function QuizPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="absolute top-4 right-4">
+      <div className="fixed top-4 right-4 z-50">
         <ThemeToggle />
       </div>
       <div className="container mx-auto px-4 py-8">
@@ -570,16 +570,17 @@ export default function QuizPage() {
                           cn(
                             'relative flex cursor-pointer rounded-lg px-5 py-4 shadow-md focus:outline-none',
                             'hover:bg-accent/50 transition-colors duration-200',
+                            'min-h-[80px] w-full',
                             checked
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-card',
+                              ? 'bg-primary text-primary-foreground border-2 border-primary'
+                              : 'bg-card border-2 border-border hover:border-primary/50',
                             isSubmitting && 'opacity-50 cursor-not-allowed'
                           )
                         }
                       >
                         {({ checked }) => (
                           <div className="flex w-full items-center justify-between">
-                            <div className="flex items-center">
+                            <div className="flex items-center flex-1">
                               <div className="text-sm">
                                 <RadioGroup.Label
                                   as="p"
@@ -593,7 +594,7 @@ export default function QuizPage() {
                                   )}>
                                     {index + 1}.
                                   </span>{' '}
-                                  {option.text}
+                                  <span className="inline-block align-middle">{option.text}</span>
                                 </RadioGroup.Label>
                               </div>
                             </div>
