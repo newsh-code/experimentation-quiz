@@ -4,9 +4,6 @@
   "installCommand": "npm ci",
   "framework": "nextjs",
   "outputDirectory": ".next",
-  "eslint": {
-    "ignoreDuringBuilds": true
-  },
   "version": 2,
   "regions": ["iad1"],
   "env": {
