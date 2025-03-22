@@ -31,25 +31,49 @@ export default function QuizPage() {
     [state.currentQuestion, state.questions.length]
   );
 
-  // Single initialization effect
+  // Single initialization effect with improved validation
   useEffect(() => {
     if (!hasInitialized && !state.isLoading && state.questions.length > 0) {
+      console.group('Quiz Page Initialization');
+      console.log('State:', {
+        hasInitialized,
+        isLoading: state.isLoading,
+        questionsCount: state.questions.length,
+        currentQuestion: state.currentQuestion
+      });
       setHasInitialized(true);
+      console.groupEnd();
     }
-  }, [hasInitialized, state.isLoading, state.questions.length]);
+  }, [hasInitialized, state.isLoading, state.questions.length, state.currentQuestion]);
 
-  // Error boundary effect
+  // Error boundary with improved validation
   useEffect(() => {
-    if (hasInitialized && (!state.questions.length || state.currentQuestion >= state.questions.length)) {
-      router.push('/');
+    if (hasInitialized && state.questions.length > 0) {
+      if (state.currentQuestion >= state.questions.length) {
+        console.error('Invalid question index, redirecting to home:', {
+          currentQuestion: state.currentQuestion,
+          totalQuestions: state.questions.length
+        });
+        router.push('/');
+      }
     }
   }, [hasInitialized, state.questions.length, state.currentQuestion, router]);
 
   const handleAnswer = useCallback(async (value: number) => {
-    if (isSubmitting || !currentQuestion) return;
+    if (isSubmitting || !currentQuestion) {
+      console.log('Skipping answer:', { isSubmitting, hasCurrentQuestion: !!currentQuestion });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
+      console.group('Answer Submission');
+      console.log('Submitting answer:', {
+        questionIndex: state.currentQuestion,
+        value,
+        isLast: isLastQuestion
+      });
+
       dispatch({
         type: 'ANSWER_QUESTION',
         questionId: state.currentQuestion.toString(),
@@ -58,12 +82,13 @@ export default function QuizPage() {
 
       setSelectedValue(value);
 
-      // Move to next question after a brief delay
       if (!isLastQuestion) {
         await new Promise(resolve => setTimeout(resolve, 300));
         dispatch({ type: 'NEXT_QUESTION' });
         setSelectedValue(undefined);
       }
+
+      console.groupEnd();
     } finally {
       setIsSubmitting(false);
     }
@@ -74,7 +99,10 @@ export default function QuizPage() {
     
     setIsSubmitting(true);
     try {
+      console.log('Navigating to results page');
       await router.push('/results');
+    } catch (error) {
+      console.error('Navigation error:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -176,13 +204,17 @@ export default function QuizPage() {
     };
   }, [debouncedHandleKeyPress]);
 
-  // Loading state
+  // Loading state with improved feedback
   if (!currentQuestion) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Loading Quiz...</h1>
-          <p>Please wait while we prepare your questions.</p>
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold">Loading Quiz...</h1>
+          <p className="text-muted-foreground">
+            {state.questions.length === 0 
+              ? "Preparing your questions..."
+              : "Loading your progress..."}
+          </p>
         </div>
       </div>
     );

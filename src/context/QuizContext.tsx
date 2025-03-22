@@ -45,39 +45,47 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
       currentQuestion: state.currentQuestion,
       questionsCount: state.questions.length,
       answersCount: Object.keys(state.answers).length,
-      isLoading: state.isLoading
+      isLoading: state.isLoading,
+      hasQuestions: state.questions.length > 0
     });
     console.groupEnd();
   }
 
   switch (action.type) {
     case 'START_QUIZ': {
-      // Prevent starting if already in progress
+      // Prevent starting if already in progress or no questions
       if (Object.keys(state.answers).length > 0) {
         console.warn('Quiz already in progress, ignoring START_QUIZ');
         return state;
       }
 
-      // Validate questions before starting
       if (!Array.isArray(state.questions) || state.questions.length === 0) {
         console.error('Cannot start quiz: No questions available');
-        return state;
+        return {
+          ...state,
+          isLoading: true // Keep loading if no questions
+        };
       }
 
+      // Start fresh with initial state but keep questions
       return {
         ...initialState,
-        questions: state.questions, // Preserve questions
-        isLoading: false
+        questions: state.questions,
+        isLoading: false,
+        currentQuestion: 0
       };
     }
 
     case 'ANSWER_QUESTION': {
+      const questionId = action.questionId;
+      const answer = action.answer;
+
       // Skip if already answered or loading
-      if (state.isLoading || state.answers[action.questionId] !== undefined) {
+      if (state.isLoading || state.answers[questionId] !== undefined) {
         return state;
       }
 
-      const questionIndex = parseInt(action.questionId);
+      const questionIndex = parseInt(questionId);
       if (isNaN(questionIndex) || questionIndex < 0 || questionIndex >= state.questions.length) {
         console.error('Invalid question index:', questionIndex);
         return state;
@@ -89,9 +97,9 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
         return state;
       }
 
-      const newAnswers = { ...state.answers, [action.questionId]: action.answer };
+      const newAnswers = { ...state.answers, [questionId]: answer };
       const newCategoryScores = { ...state.categoryScores };
-      const optionScore = question.options[action.answer].score;
+      const optionScore = question.options[answer].score;
       newCategoryScores[question.category] = (newCategoryScores[question.category] || 0) + optionScore;
 
       return {
@@ -164,25 +172,37 @@ const initialState: QuizState = {
 };
 
 export function QuizProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(quizReducer, initialState);
+  const [state, dispatch] = useReducer(quizReducer, {
+    ...initialState,
+    isLoading: !QUESTIONS.length // Start loading only if no questions
+  });
   const [hasInitialized, setHasInitialized] = useState(false);
 
-  // Single initialization effect
+  // Improved initialization effect
   useEffect(() => {
-    if (!hasInitialized && state.questions.length > 0) {
-      console.log('Initializing quiz with questions:', state.questions.length);
+    if (!hasInitialized && !state.isLoading && state.questions.length > 0) {
+      console.group('Quiz Initialization');
+      console.log('Starting quiz with:', {
+        questionCount: state.questions.length,
+        isLoading: state.isLoading,
+        hasInitialized
+      });
       setHasInitialized(true);
       dispatch({ type: 'START_QUIZ' });
+      console.groupEnd();
     }
-  }, [hasInitialized, state.questions.length]);
+  }, [hasInitialized, state.isLoading, state.questions.length]);
 
   // Validate current question
   useEffect(() => {
     if (hasInitialized && state.currentQuestion >= state.questions.length) {
-      console.error('Invalid question index, resetting quiz');
+      console.error('Invalid question index detected:', {
+        currentQuestion: state.currentQuestion,
+        questionsLength: state.questions.length
+      });
       dispatch({ type: 'RESET_QUIZ' });
     }
-  }, [state.currentQuestion, state.questions.length, hasInitialized]);
+  }, [hasInitialized, state.currentQuestion, state.questions.length]);
 
   const value = useMemo(() => ({
     state,
