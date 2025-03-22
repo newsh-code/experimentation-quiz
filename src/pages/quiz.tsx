@@ -18,12 +18,31 @@ export default function QuizPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
   
-  // Memoize current question to prevent unnecessary re-renders
+  // Memoize current question with validation
   const currentQuestion = useMemo(() => {
     if (!Array.isArray(state.questions) || state.questions.length === 0) {
+      console.error('Questions array is invalid:', {
+        isArray: Array.isArray(state.questions),
+        length: state.questions?.length
+      });
       return null;
     }
-    return state.questions[state.currentQuestion] || null;
+
+    if (state.currentQuestion < 0 || state.currentQuestion >= state.questions.length) {
+      console.error('Current question index out of bounds:', {
+        index: state.currentQuestion,
+        length: state.questions.length
+      });
+      return null;
+    }
+
+    const question = state.questions[state.currentQuestion];
+    if (!question) {
+      console.error('Question not found at index:', state.currentQuestion);
+      return null;
+    }
+
+    return question;
   }, [state.questions, state.currentQuestion]);
 
   const isLastQuestion = useMemo(() => 
@@ -31,26 +50,26 @@ export default function QuizPage() {
     [state.currentQuestion, state.questions.length]
   );
 
-  // Single initialization effect with improved validation
+  // Single initialization effect
   useEffect(() => {
-    if (!hasInitialized && !state.isLoading && state.questions.length > 0) {
-      console.group('Quiz Page Initialization');
-      console.log('State:', {
+    if (!hasInitialized && state.questions.length > 0) {
+      console.group('Quiz Page Mount');
+      console.log('Initial State:', {
         hasInitialized,
-        isLoading: state.isLoading,
         questionsCount: state.questions.length,
-        currentQuestion: state.currentQuestion
+        currentQuestion: state.currentQuestion,
+        hasAnswers: Object.keys(state.answers).length > 0
       });
       setHasInitialized(true);
       console.groupEnd();
     }
-  }, [hasInitialized, state.isLoading, state.questions.length, state.currentQuestion]);
+  }, [hasInitialized, state.questions.length, state.currentQuestion, state.answers]);
 
-  // Error boundary with improved validation
+  // Navigation guard effect
   useEffect(() => {
     if (hasInitialized && state.questions.length > 0) {
       if (state.currentQuestion >= state.questions.length) {
-        console.error('Invalid question index, redirecting to home:', {
+        console.error('Invalid navigation state:', {
           currentQuestion: state.currentQuestion,
           totalQuestions: state.questions.length
         });
@@ -61,19 +80,24 @@ export default function QuizPage() {
 
   const handleAnswer = useCallback(async (value: number) => {
     if (isSubmitting || !currentQuestion) {
-      console.log('Skipping answer:', { isSubmitting, hasCurrentQuestion: !!currentQuestion });
+      console.warn('Cannot submit answer:', {
+        isSubmitting,
+        hasCurrentQuestion: !!currentQuestion
+      });
       return;
     }
 
     setIsSubmitting(true);
     try {
       console.group('Answer Submission');
-      console.log('Submitting answer:', {
+      console.log('Processing answer:', {
         questionIndex: state.currentQuestion,
         value,
-        isLast: isLastQuestion
+        isLast: isLastQuestion,
+        currentAnswers: state.answers
       });
 
+      // Submit answer
       dispatch({
         type: 'ANSWER_QUESTION',
         questionId: state.currentQuestion.toString(),
@@ -82,6 +106,7 @@ export default function QuizPage() {
 
       setSelectedValue(value);
 
+      // Move to next question after a brief delay
       if (!isLastQuestion) {
         await new Promise(resolve => setTimeout(resolve, 300));
         dispatch({ type: 'NEXT_QUESTION' });
@@ -89,10 +114,12 @@ export default function QuizPage() {
       }
 
       console.groupEnd();
+    } catch (error) {
+      console.error('Error submitting answer:', error);
     } finally {
       setIsSubmitting(false);
     }
-  }, [dispatch, isLastQuestion, isSubmitting, state.currentQuestion, currentQuestion]);
+  }, [dispatch, isLastQuestion, isSubmitting, state.currentQuestion, currentQuestion, state.answers]);
 
   const handleSeeScoreClick = useCallback(async () => {
     if (isSubmitting) return;
@@ -204,16 +231,18 @@ export default function QuizPage() {
     };
   }, [debouncedHandleKeyPress]);
 
-  // Loading state with improved feedback
+  // Loading state with improved validation
   if (!currentQuestion) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <h1 className="text-2xl font-bold">Loading Quiz...</h1>
           <p className="text-muted-foreground">
-            {state.questions.length === 0 
+            {!state.questions.length 
               ? "Preparing your questions..."
-              : "Loading your progress..."}
+              : state.currentQuestion >= state.questions.length
+                ? "Validating quiz state..."
+                : "Loading your progress..."}
           </p>
         </div>
       </div>
