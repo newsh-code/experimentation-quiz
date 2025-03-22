@@ -256,18 +256,32 @@ const initialState: QuizState = {
 export function QuizProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(quizReducer, initialState);
 
-  // Log state changes
+  // Log only meaningful state changes
   useEffect(() => {
-    console.log('Quiz state updated:', {
+    // Only log when specific state properties change
+    const shouldLog = [
+      state.isComplete,
+      state.currentQuestion,
+      Object.keys(state.answers).length,
+      state.isLoading
+    ];
+
+    console.group('Quiz State Update');
+    console.log('State changed:', {
       isLoading: state.isLoading,
       currentQuestion: state.currentQuestion,
       answersCount: Object.keys(state.answers).length,
-      questionsLength: state.questions?.length ?? 0,
       isComplete: state.isComplete,
       categoryScores: state.categoryScores,
       categoryPercentages: state.categoryPercentages
     });
-  }, [state]);
+    console.groupEnd();
+  }, [
+    state.isComplete,
+    state.currentQuestion,
+    state.answers,
+    state.isLoading
+  ]);
 
   // Optimize state updates with useMemo
   const memoizedState = useMemo(() => ({
@@ -282,7 +296,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     isLoading: state.isLoading,
     email: state.email,
     userData: state.userData,
-    questions: state.questions
+    questions: QUESTIONS // Use QUESTIONS directly instead of state.questions
   }), [
     state.currentQuestion,
     state.answers,
@@ -294,31 +308,32 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     state.isComplete,
     state.isLoading,
     state.email,
-    state.userData,
-    state.questions
+    state.userData
   ]);
 
   // Optimize dispatch with useCallback
   const memoizedDispatch = useCallback((action: QuizAction) => {
-    console.log('QuizReducer Debug:', {
-      action: {
+    // Only log specific actions
+    if (['START_QUIZ', 'COMPLETE_QUIZ', 'ANSWER_QUESTION'].includes(action.type)) {
+      console.group(`Quiz Action: ${action.type}`);
+      console.log('Action:', {
         type: action.type,
         payload: action.type === 'ANSWER_QUESTION' ? {
           questionId: action.questionId,
           answer: action.answer
         } : undefined
-      },
-      state: {
+      });
+      console.log('Current State:', {
         currentQuestion: state.currentQuestion,
         answersCount: Object.keys(state.answers).length,
-        totalQuestions: state.questions?.length ?? 0,
-        categoryScores: state.categoryScores,
         isComplete: state.isComplete,
         isLoading: state.isLoading
-      }
-    });
+      });
+      console.groupEnd();
+    }
+    
     dispatch(action);
-  }, [dispatch, state]);
+  }, [dispatch]);
 
   return (
     <QuizContext.Provider value={{ state: memoizedState, dispatch: memoizedDispatch }}>

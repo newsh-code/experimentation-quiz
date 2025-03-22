@@ -263,68 +263,114 @@ export default function QuizPage() {
     }
   }, [dispatch, isSubmitting, state.answers, state.categoryScores, state.isComplete, router]);
 
-  // Add navigation guard
+  // Add navigation guard with navigation tracking
   useEffect(() => {
-    if (state.isComplete) {
-      console.log('Quiz is complete, redirecting to email capture...');
-      router.push('/email-capture');
-    }
-  }, [state.isComplete, router]);
-
-  // Add state validation
-  useEffect(() => {
-    if (!state.questions?.length) {
-      console.error('No questions available:', {
-        currentQuestion: state.currentQuestion,
-        isLoading: state.isLoading
-      });
-      dispatch({ type: 'RESET_QUIZ' });
-      router.push('/');
-      return;
-    }
-
-    if (state.currentQuestion >= state.questions.length) {
-      console.error('Invalid question index detected:', {
-        currentQuestion: state.currentQuestion,
-        totalQuestions: state.questions.length,
-        isLoading: state.isLoading
-      });
-      dispatch({ type: 'RESET_QUIZ' });
-      router.push('/');
-    }
-
-    // Validate answer state
-    if (selectedValue !== undefined && currentQuestion) {
-      if (selectedValue < 0 || selectedValue >= currentQuestion.options.length) {
-        console.error('Invalid answer state detected:', {
-          selectedValue,
-          optionsLength: currentQuestion.options.length,
-          questionIndex: state.currentQuestion,
-          question: currentQuestion
+    const navigationAttempt = async () => {
+      if (state.isComplete && !isSubmitting) {
+        console.group('Navigation Guard');
+        console.log('Quiz completion detected:', {
+          isComplete: state.isComplete,
+          answersCount: Object.keys(state.answers).length,
+          currentQuestion: state.currentQuestion
         });
-        // Reset the invalid answer
-        dispatch({
-          type: 'ANSWER_QUESTION',
-          questionId: state.currentQuestion.toString(),
-          answer: 0
-        });
-      }
-    }
-
-    // Validate category scores
-    if (state.categoryScores) {
-      Object.entries(state.categoryScores).forEach(([category, score]) => {
-        if (score < 0) {
-          console.error('Invalid category score detected:', {
-            category,
-            score,
-            currentQuestion: state.currentQuestion,
-            answers: state.answers
-          });
+        
+        try {
+          await router.push('/email-capture');
+          console.log('Navigation successful');
+        } catch (error) {
+          console.error('Navigation failed:', error);
         }
-      });
+        
+        console.groupEnd();
+      }
+    };
+    
+    navigationAttempt();
+  }, [state.isComplete, router, state.answers, state.currentQuestion, isSubmitting]);
+
+  // Optimize initialization effect
+  useEffect(() => {
+    if (!hasInitialized && !state.isLoading && Object.keys(state.answers).length === 0) {
+      console.group('Quiz Initialization');
+      console.log('Starting quiz...');
+      
+      setHasInitialized(true);
+      dispatch({ type: 'START_QUIZ' });
+      
+      console.groupEnd();
     }
-  }, [state.currentQuestion, state.questions, dispatch, router, state.isLoading, selectedValue, currentQuestion, state.categoryScores, state.answers]);
+  }, [dispatch, state.isLoading, state.answers, hasInitialized]);
+
+  // Optimize loading state transition
+  useEffect(() => {
+    if (state.isLoading) {
+      console.group('Loading State');
+      console.log('Loading quiz...');
+      
+      const timer = setTimeout(() => {
+        dispatch({ type: 'ANSWER_QUESTION', questionId: '0', answer: 0 });
+        console.log('Loading complete');
+      }, 500);
+      
+      console.groupEnd();
+      return () => clearTimeout(timer);
+    }
+  }, [state.isLoading, dispatch]);
+
+  // Optimize state validation
+  useEffect(() => {
+    const validateState = () => {
+      if (!QUESTIONS.length) {
+        console.error('No questions available');
+        dispatch({ type: 'RESET_QUIZ' });
+        router.push('/');
+        return;
+      }
+
+      if (state.currentQuestion >= QUESTIONS.length) {
+        console.error('Invalid question index');
+        dispatch({ type: 'RESET_QUIZ' });
+        router.push('/');
+      }
+    };
+
+    validateState();
+  }, [state.currentQuestion, dispatch, router]);
+
+  // Update selected value when navigating between questions
+  useEffect(() => {
+    const currentAnswer = state.answers[state.currentQuestion];
+    setSelectedValue(currentAnswer);
+  }, [state.currentQuestion, state.answers]);
+
+  // Remove unnecessary logging effects
+  
+  // Keep the performance monitoring effect but reduce its frequency
+  useEffect(() => {
+    if (state.currentQuestion % 5 === 0) { // Only monitor every 5th question
+      const startTime = performance.now();
+      return () => {
+        const endTime = performance.now();
+        console.log('Performance Check:', {
+          questionIndex: state.currentQuestion,
+          duration: endTime - startTime
+        });
+      };
+    }
+  }, [state.currentQuestion]);
+
+  // Keep smooth scroll effect
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }, [state.currentQuestion]);
+
+  // Questions loaded check
+  useEffect(() => {
+    setQuestionsLoaded(QUESTIONS.length > 0);
+  }, []);
 
   const handlePrevious = useCallback(() => {
     if (state.currentQuestion > 0) {
@@ -335,22 +381,8 @@ export default function QuizPage() {
   // Fix callback dependencies
   const debouncedHandleKeyPress = React.useCallback(
     (e: KeyboardEvent) => {
-      console.log('Keyboard Event:', {
-        key: e.key,
-        state: {
-          isLoading: state.isLoading,
-          hasCurrentQuestion: !!currentQuestion,
-          selectedValue,
-          isLastQuestion,
-          isSubmitting
-        }
-      });
-
       // Prevent handling if loading or no current question
       if (state.isLoading || !currentQuestion) {
-        console.log('Ignoring key press - invalid state', {
-          reason: state.isLoading ? 'loading' : 'no current question'
-        });
         return;
       }
 
@@ -359,14 +391,7 @@ export default function QuizPage() {
       if (numKey >= 1 && numKey <= 4) {
         e.preventDefault();
         if (numKey <= currentQuestion.options.length) {
-          console.log('Processing number key:', {
-            key: numKey,
-            optionsLength: currentQuestion.options.length,
-            currentQuestion: state.currentQuestion
-          });
           handleAnswer(numKey - 1);
-        } else {
-          console.log('Invalid number key for current question');
         }
         return;
       }
@@ -375,32 +400,21 @@ export default function QuizPage() {
       if (e.key === 'Enter') {
         e.preventDefault();
         if (selectedValue !== undefined) {
-          console.log('Processing Enter key:', {
-            selectedValue,
-            isLastQuestion,
-            currentQuestion: state.currentQuestion
-          });
           if (isLastQuestion) {
             handleSeeScoreClick();
           } else {
             dispatch({ type: 'NEXT_QUESTION' });
           }
-        } else {
-          console.log('Ignoring Enter key - no answer selected');
         }
       }
 
       // Handle Escape key
       if (e.key === 'Escape' && state.currentQuestion > 0) {
         e.preventDefault();
-        console.log('Processing Escape key:', {
-          currentQuestion: state.currentQuestion,
-          previousQuestion: state.currentQuestion - 1
-        });
         handlePrevious();
       }
     },
-    [currentQuestion, dispatch, handleAnswer, handlePrevious, handleSeeScoreClick, isLastQuestion, isSubmitting, selectedValue, state.currentQuestion, state.isLoading]
+    [currentQuestion, dispatch, handleAnswer, handlePrevious, handleSeeScoreClick, isLastQuestion, selectedValue, state.currentQuestion, state.isLoading]
   );
 
   useEffect(() => {
@@ -409,70 +423,6 @@ export default function QuizPage() {
       window.removeEventListener('keydown', debouncedHandleKeyPress);
     };
   }, [debouncedHandleKeyPress]);
-
-  // Add UI state validation
-  useEffect(() => {
-    console.log('UI State Update:', {
-      progress: {
-        current: state.currentQuestion,
-        total: QUESTIONS.length,
-        percentage: (state.currentQuestion / QUESTIONS.length) * 100
-      },
-      state: {
-        selectedValue,
-        isSubmitting,
-        isLoading: state.isLoading,
-        answersCount: Object.keys(state.answers).length,
-        categoryScores: state.categoryScores
-      }
-    });
-  }, [state.currentQuestion, selectedValue, isSubmitting, state.isLoading, state.answers, state.categoryScores]);
-
-  // Add performance monitoring
-  useEffect(() => {
-    const startTime = performance.now();
-    return () => {
-      const endTime = performance.now();
-      console.log('Question Render Performance:', {
-        metrics: {
-          duration: endTime - startTime,
-          questionIndex: state.currentQuestion,
-          hasAnswer: selectedValue !== undefined
-        }
-      });
-    };
-  }, [state.currentQuestion, selectedValue]);
-
-  // Add smooth scroll to top when question changes
-  useEffect(() => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-  }, [state.currentQuestion]);
-
-  useEffect(() => {
-    if (state.questions?.length > 0) {
-      setQuestionsLoaded(true);
-    }
-  }, [state.questions]);
-
-  // Update selected value when navigating between questions
-  useEffect(() => {
-    // If we have an answer for the current question, set it as selected
-    const currentAnswer = state.answers[state.currentQuestion];
-    if (currentAnswer !== undefined) {
-      setSelectedValue(currentAnswer);
-    } else {
-      setSelectedValue(undefined);
-    }
-    
-    console.log('Question navigation:', {
-      currentQuestion: state.currentQuestion,
-      hasAnswer: currentAnswer !== undefined,
-      selectedValue: currentAnswer
-    });
-  }, [state.currentQuestion, state.answers]);
 
   if (!questionsLoaded) {
     return (
