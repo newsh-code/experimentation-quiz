@@ -40,6 +40,16 @@ jobs:
     
     - name: Build
       run: npm run build
+    
+    - name: Verify build output
+      run: |
+        if [ ! -d ".next" ]; then
+          echo "Error: Build failed - .next directory not found"
+          echo "Current directory contents:"
+          ls -la
+          exit 1
+        fi
+        echo "Build successful - .next directory found"
 
   release:
     needs: build
@@ -71,25 +81,21 @@ jobs:
         echo "Current directory contents:"
         ls -la
         echo "Checking for build output directories:"
-        ls -la dist out build .next 2>/dev/null || true
+        ls -la .next 2>/dev/null || true
     
     - name: Create ZIP file
       run: |
-        # Check for common build output directories
-        if [ -d "dist" ]; then
-          echo "Found 'dist' directory, creating ZIP from it"
-          cd dist && zip -r ../extension.zip .
-        elif [ -d "out" ]; then
-          echo "Found 'out' directory, creating ZIP from it"
-          cd out && zip -r ../extension.zip .
-        elif [ -d ".next" ]; then
-          echo "Found '.next' directory, creating ZIP from it"
-          cd .next && zip -r ../extension.zip .
-        else
-          echo "Error: No build output directory found!"
-          echo "Expected one of: dist/, out/, or .next/"
+        if [ ! -d ".next" ]; then
+          echo "Error: Build output directory (.next) not found!"
+          echo "This could mean the build step failed or the output directory is in a different location."
+          echo "Current directory contents:"
+          ls -la
           exit 1
         fi
+        
+        echo "Creating ZIP file from .next directory..."
+        cd .next && zip -r ../extension.zip .
+        echo "ZIP file created successfully"
     
     - name: Create Release
       id: create_release

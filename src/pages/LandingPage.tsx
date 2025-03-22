@@ -81,7 +81,7 @@ export default function LandingPage() {
 
             <motion.div
               variants={fadeInUp}
-              className="pt-6"
+              className="pt-6 text-center"
             >
               <Button
                 size="lg"
@@ -106,7 +106,7 @@ export default function LandingPage() {
                   />
                 </svg>
               </Button>
-              <p className="text-sm text-muted-foreground mt-4 font-medium">
+              <p className="text-sm text-muted-foreground mt-4 font-medium text-center">
                 Takes about 5 minutes • No registration required
               </p>
             </motion.div>
