@@ -249,6 +249,9 @@ export default function QuizPage() {
       // Dispatch complete action
       dispatch({ type: 'COMPLETE_QUIZ' });
       
+      // Wait for state update
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Navigate to email capture page
       console.log('Navigating to email capture page...');
       await router.push('/email-capture');
@@ -258,7 +261,70 @@ export default function QuizPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [dispatch, isSubmitting, state.answers, state.categoryScores, state.isComplete, router, setIsSubmitting]);
+  }, [dispatch, isSubmitting, state.answers, state.categoryScores, state.isComplete, router]);
+
+  // Add navigation guard
+  useEffect(() => {
+    if (state.isComplete) {
+      console.log('Quiz is complete, redirecting to email capture...');
+      router.push('/email-capture');
+    }
+  }, [state.isComplete, router]);
+
+  // Add state validation
+  useEffect(() => {
+    if (!state.questions?.length) {
+      console.error('No questions available:', {
+        currentQuestion: state.currentQuestion,
+        isLoading: state.isLoading
+      });
+      dispatch({ type: 'RESET_QUIZ' });
+      router.push('/');
+      return;
+    }
+
+    if (state.currentQuestion >= state.questions.length) {
+      console.error('Invalid question index detected:', {
+        currentQuestion: state.currentQuestion,
+        totalQuestions: state.questions.length,
+        isLoading: state.isLoading
+      });
+      dispatch({ type: 'RESET_QUIZ' });
+      router.push('/');
+    }
+
+    // Validate answer state
+    if (selectedValue !== undefined && currentQuestion) {
+      if (selectedValue < 0 || selectedValue >= currentQuestion.options.length) {
+        console.error('Invalid answer state detected:', {
+          selectedValue,
+          optionsLength: currentQuestion.options.length,
+          questionIndex: state.currentQuestion,
+          question: currentQuestion
+        });
+        // Reset the invalid answer
+        dispatch({
+          type: 'ANSWER_QUESTION',
+          questionId: state.currentQuestion.toString(),
+          answer: 0
+        });
+      }
+    }
+
+    // Validate category scores
+    if (state.categoryScores) {
+      Object.entries(state.categoryScores).forEach(([category, score]) => {
+        if (score < 0) {
+          console.error('Invalid category score detected:', {
+            category,
+            score,
+            currentQuestion: state.currentQuestion,
+            answers: state.answers
+          });
+        }
+      });
+    }
+  }, [state.currentQuestion, state.questions, dispatch, router, state.isLoading, selectedValue, currentQuestion, state.categoryScores, state.answers]);
 
   const handlePrevious = useCallback(() => {
     if (state.currentQuestion > 0) {
@@ -361,63 +427,6 @@ export default function QuizPage() {
       }
     });
   }, [state.currentQuestion, selectedValue, isSubmitting, state.isLoading, state.answers, state.categoryScores]);
-
-  // Add error boundary for invalid states
-  useEffect(() => {
-    if (!state.questions?.length) {
-      console.error('No questions available:', {
-        currentQuestion: state.currentQuestion,
-        isLoading: state.isLoading,
-        questionsLength: state.questions?.length
-      });
-      dispatch({ type: 'RESET_QUIZ' });
-      router.push('/');
-      return;
-    }
-
-    if (state.currentQuestion >= state.questions.length) {
-      console.error('Invalid question index detected:', {
-        currentQuestion: state.currentQuestion,
-        totalQuestions: state.questions.length,
-        isLoading: state.isLoading,
-        answers: state.answers
-      });
-      dispatch({ type: 'RESET_QUIZ' });
-      router.push('/');
-    }
-
-    // Validate answer state
-    if (selectedValue !== undefined && currentQuestion) {
-      if (selectedValue < 0 || selectedValue >= currentQuestion.options.length) {
-        console.error('Invalid answer state detected:', {
-          selectedValue,
-          optionsLength: currentQuestion.options.length,
-          questionIndex: state.currentQuestion,
-          question: currentQuestion
-        });
-        // Reset the invalid answer
-        dispatch({
-          type: 'ANSWER_QUESTION',
-          questionId: state.currentQuestion.toString(),
-          answer: 0
-        });
-      }
-    }
-
-    // Validate category scores
-    if (state.categoryScores) {
-      Object.entries(state.categoryScores).forEach(([category, score]) => {
-        if (score < 0) {
-          console.error('Invalid category score detected:', {
-            category,
-            score,
-            currentQuestion: state.currentQuestion,
-            answers: state.answers
-          });
-        }
-      });
-    }
-  }, [state.currentQuestion, state.questions, dispatch, router, state.isLoading, selectedValue, currentQuestion, state.categoryScores, state.answers]);
 
   // Add performance monitoring
   useEffect(() => {
