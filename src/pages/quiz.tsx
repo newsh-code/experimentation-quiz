@@ -73,8 +73,8 @@ export default function QuizPage() {
     }
   }, [state.isComplete, router, isSubmitting]);
 
-  const handleAnswer = useCallback(async (value: number) => {
-    if (isSubmitting || !currentQuestion) return;
+  const handleAnswer = useCallback(async (value: number | null) => {
+    if (isSubmitting || !currentQuestion || value === null) return;
 
     console.log('Answer Submission');
     console.log('Processing answer:', {
@@ -85,32 +85,26 @@ export default function QuizPage() {
     });
 
     setIsSubmitting(true);
-    dispatch({ type: 'ANSWER_QUESTION', questionId: currentQuestion.id.toString(), answer: value });
-
-    // If this is the last question, complete the quiz
-    if (state.currentQuestion === state.questions.length - 1) {
-      dispatch({ type: 'COMPLETE_QUIZ' });
-    } else {
-      dispatch({ type: 'NEXT_QUESTION' });
-    }
-
-    setSelectedValue(null);
-    setIsSubmitting(false);
-  }, [currentQuestion, state.currentQuestion, state.questions.length, dispatch, isSubmitting]);
-
-  const handleSeeScoreClick = useCallback(async () => {
-    if (isSubmitting) return;
-    
-    setIsSubmitting(true);
     try {
-      console.log('Navigating to results page');
-      await router.push('/results');
+      // Submit answer
+      dispatch({ type: 'ANSWER_QUESTION', questionId: currentQuestion.id.toString(), answer: value });
+
+      // If this is the last question, complete the quiz
+      if (state.currentQuestion === state.questions.length - 1) {
+        dispatch({ type: 'COMPLETE_QUIZ' });
+      } else {
+        // Move to next question after a brief delay
+        await new Promise(resolve => setTimeout(resolve, 300));
+        dispatch({ type: 'NEXT_QUESTION' });
+      }
+
+      setSelectedValue(null);
     } catch (error) {
-      console.error('Navigation error:', error);
+      console.error('Error processing answer:', error);
     } finally {
       setIsSubmitting(false);
     }
-  }, [router, isSubmitting]);
+  }, [currentQuestion, state.currentQuestion, state.questions.length, dispatch, isSubmitting]);
 
   const getProgressPhrase = (progress: number, isLastQuestionAnswered: boolean) => {
     if (isLastQuestionAnswered && progress === 100) {
@@ -185,7 +179,7 @@ export default function QuizPage() {
         e.preventDefault();
         if (selectedValue !== undefined) {
           if (isLastQuestion) {
-            handleSeeScoreClick();
+            handleAnswer(selectedValue);
           } else {
             dispatch({ type: 'NEXT_QUESTION' });
           }
@@ -198,7 +192,7 @@ export default function QuizPage() {
         handlePrevious();
       }
     },
-    [currentQuestion, dispatch, handleAnswer, handlePrevious, handleSeeScoreClick, isLastQuestion, selectedValue, state.currentQuestion, state.isLoading]
+    [currentQuestion, dispatch, handleAnswer, handlePrevious, selectedValue, state.currentQuestion, state.isLoading]
   );
 
   useEffect(() => {
@@ -346,12 +340,12 @@ export default function QuizPage() {
             </Button>
             {isLastQuestion && (
               <Button 
-                onClick={handleSeeScoreClick}
-                disabled={isSubmitting || selectedValue === undefined}
+                onClick={() => selectedValue !== null && handleAnswer(selectedValue)}
+                disabled={isSubmitting || selectedValue === null}
                 className={cn(
                   "w-full h-11 font-medium shadow-lg hover:shadow-xl transition-all",
                   "bg-primary hover:bg-primary/90 text-primary-foreground",
-                  (isSubmitting || selectedValue === undefined) && "opacity-50 cursor-not-allowed"
+                  (isSubmitting || selectedValue === null) && "opacity-50 cursor-not-allowed"
                 )}
               >
                 {isSubmitting ? (

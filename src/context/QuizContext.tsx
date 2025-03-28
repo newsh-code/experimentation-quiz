@@ -48,7 +48,9 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
       isLoading: state.isLoading,
       hasQuestions: state.questions.length > 0,
       answers: state.answers,
-      isComplete: state.isComplete
+      isComplete: state.isComplete,
+      categoryScores: state.categoryScores,
+      categoryPercentages: state.categoryPercentages
     });
     console.groupEnd();
   }
@@ -76,7 +78,9 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
         questions: state.questions,
         currentQuestion: 0,
         isLoading: false,
-        isComplete: false
+        isComplete: false,
+        categoryScores: { ...initialCategoryState },
+        categoryPercentages: { ...initialCategoryState }
       };
     }
 
@@ -185,7 +189,9 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
       return {
         ...initialState,
         questions: state.questions,
-        isComplete: false
+        isComplete: false,
+        categoryScores: { ...initialCategoryState },
+        categoryPercentages: { ...initialCategoryState }
       };
     }
 
