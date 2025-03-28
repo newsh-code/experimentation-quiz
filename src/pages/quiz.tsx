@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useQuiz } from '../context/QuizContext';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -16,7 +16,7 @@ export default function QuizPage() {
   const { state, dispatch } = useQuiz();
   const [selectedValue, setSelectedValue] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasInitialized, setHasInitialized] = useState(false);
+  const initializationRef = useRef(false);
   
   // Memoize current question with validation
   const currentQuestion = useMemo(() => {
@@ -38,22 +38,21 @@ export default function QuizPage() {
 
   // Single initialization effect
   useEffect(() => {
-    console.log('Quiz Page Mount');
-    console.log('Initial State:', {
-      currentQuestion: state.currentQuestion,
-      questionsCount: state.questions.length,
-      hasAnswers: Object.keys(state.answers).length > 0,
-      isComplete: state.isComplete
-    });
-
-    if (!hasInitialized && state.questions.length > 0) {
-      setHasInitialized(true);
+    if (!initializationRef.current) {
+      console.log('Quiz Page Mount');
+      console.log('Initial State:', {
+        currentQuestion: state.currentQuestion,
+        questionsCount: state.questions.length,
+        hasAnswers: Object.keys(state.answers).length > 0,
+        isComplete: state.isComplete
+      });
+      initializationRef.current = true;
     }
-  }, [hasInitialized, state.questions.length, state.answers, state.isComplete]);
+  }, [state.currentQuestion, state.questions.length, state.answers, state.isComplete]);
 
   // Navigation guard effect
   useEffect(() => {
-    if (hasInitialized && state.questions.length > 0) {
+    if (state.questions.length > 0) {
       if (state.currentQuestion >= state.questions.length) {
         console.error('Invalid question index, resetting to last valid question:', {
           current: state.currentQuestion,
@@ -62,9 +61,9 @@ export default function QuizPage() {
         dispatch({ type: 'RESET_QUIZ' });
       }
     }
-  }, [hasInitialized, state.currentQuestion, state.questions.length, dispatch]);
+  }, [state.currentQuestion, state.questions.length, dispatch]);
 
-  // Quiz completion effect
+  // Quiz completion effect with improved state management
   useEffect(() => {
     if (state.isComplete && !isSubmitting) {
       console.log('Quiz completed, navigating to email capture');
@@ -74,9 +73,19 @@ export default function QuizPage() {
   }, [state.isComplete, router, isSubmitting]);
 
   const handleAnswer = useCallback(async (value: number | null) => {
-    if (isSubmitting || !currentQuestion || value === null) return;
+    // Early return if invalid state
+    if (value === null || isSubmitting || !currentQuestion) {
+      return;
+    }
 
-    console.log('Answer Submission');
+    // Prevent duplicate submissions
+    if (state.answers[currentQuestion.id] !== undefined) {
+      console.warn('Question already answered:', currentQuestion.id);
+      return;
+    }
+
+    setIsSubmitting(true);
+    console.group('Answer Submission');
     console.log('Processing answer:', {
       questionId: currentQuestion.id,
       value,
@@ -84,27 +93,29 @@ export default function QuizPage() {
       totalQuestions: state.questions.length
     });
 
-    setIsSubmitting(true);
     try {
       // Submit answer
-      dispatch({ type: 'ANSWER_QUESTION', questionId: currentQuestion.id.toString(), answer: value });
+      dispatch({ 
+        type: 'ANSWER_QUESTION', 
+        questionId: currentQuestion.id.toString(), 
+        answer: value 
+      });
 
       // If this is the last question, complete the quiz
       if (state.currentQuestion === state.questions.length - 1) {
+        // Add a small delay before completing to prevent race conditions
+        await new Promise(resolve => setTimeout(resolve, 100));
         dispatch({ type: 'COMPLETE_QUIZ' });
       } else {
-        // Move to next question after a brief delay
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Move to next question
         dispatch({ type: 'NEXT_QUESTION' });
       }
-
-      setSelectedValue(null);
-    } catch (error) {
-      console.error('Error processing answer:', error);
     } finally {
       setIsSubmitting(false);
+      setSelectedValue(null);
+      console.groupEnd();
     }
-  }, [currentQuestion, state.currentQuestion, state.questions.length, dispatch, isSubmitting]);
+  }, [currentQuestion, dispatch, isSubmitting, state.currentQuestion, state.questions.length, state.answers]);
 
   const getProgressPhrase = (progress: number, isLastQuestionAnswered: boolean) => {
     if (isLastQuestionAnswered && progress === 100) {
@@ -114,7 +125,7 @@ export default function QuizPage() {
       return "Almost finished! 🚀";
     }
     if (progress >= 50) {
-      return "You&apos;re halfway there! 💪";
+      return "You're halfway there! 💪";
     }
     if (progress >= 25) {
       return "Great progress! 👍";
@@ -160,7 +171,7 @@ export default function QuizPage() {
   const debouncedHandleKeyPress = React.useCallback(
     (e: KeyboardEvent) => {
       // Prevent handling if loading or no current question
-      if (state.isLoading || !currentQuestion) {
+      if (state.isLoading || !currentQuestion || isSubmitting) {
         return;
       }
 
@@ -177,7 +188,7 @@ export default function QuizPage() {
       // Handle Enter key
       if (e.key === 'Enter') {
         e.preventDefault();
-        if (selectedValue !== undefined) {
+        if (selectedValue !== null) {
           if (isLastQuestion) {
             handleAnswer(selectedValue);
           } else {
@@ -192,7 +203,7 @@ export default function QuizPage() {
         handlePrevious();
       }
     },
-    [currentQuestion, dispatch, handleAnswer, handlePrevious, selectedValue, state.currentQuestion, state.isLoading]
+    [currentQuestion, dispatch, handleAnswer, handlePrevious, selectedValue, state.currentQuestion, state.isLoading, isSubmitting, isLastQuestion]
   );
 
   useEffect(() => {

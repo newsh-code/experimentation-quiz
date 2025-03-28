@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, useMemo, useCallback, useState } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useMemo, useCallback, useState, useRef } from 'react';
 import { QUESTIONS, type Question } from '../data/questions';
 import { type CategoryKey } from '../types';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -19,6 +19,7 @@ export type QuizState = {
   percentageScore?: number
   isComplete: boolean
   isLoading: boolean
+  isStarted: boolean
   email?: string
   userData?: UserData
   questions: Question[]
@@ -49,6 +50,7 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
       hasQuestions: state.questions.length > 0,
       answers: state.answers,
       isComplete: state.isComplete,
+      isStarted: state.isStarted,
       categoryScores: state.categoryScores,
       categoryPercentages: state.categoryPercentages
     });
@@ -67,10 +69,18 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
       }
 
       // Prevent restarting if already in progress or complete
-      if (state.isComplete || Object.keys(state.answers).length > 0) {
+      if (state.isStarted || state.isComplete || Object.keys(state.answers).length > 0) {
         console.warn('Quiz already in progress or complete, ignoring START_QUIZ');
         return state;
       }
+
+      // Initialize category scores with all required categories
+      const initialCategoryScores = {
+        process: 0,
+        strategy: 0,
+        insight: 0,
+        culture: 0
+      } as Record<CategoryKey, number>;
 
       // Start fresh with initial state but preserve questions
       return {
@@ -79,8 +89,9 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
         currentQuestion: 0,
         isLoading: false,
         isComplete: false,
-        categoryScores: { ...initialCategoryState },
-        categoryPercentages: { ...initialCategoryState }
+        isStarted: true,
+        categoryScores: initialCategoryScores,
+        categoryPercentages: initialCategoryScores
       };
     }
 
@@ -112,14 +123,30 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
         return state;
       }
 
+      console.group('Answer Processing');
+      console.log('Question:', {
+        id: question.id,
+        category: question.category,
+        answer: action.answer,
+        options: question.options
+      });
+
       // Update answers and scores
       const newAnswers = { ...state.answers, [questionIndex]: action.answer };
       const newCategoryScores = { ...state.categoryScores };
       const optionScore = question.options[action.answer].score;
       newCategoryScores[question.category] = (newCategoryScores[question.category] || 0) + optionScore;
 
+      console.log('Updated scores:', {
+        categoryScores: newCategoryScores,
+        currentCategory: question.category,
+        addedScore: optionScore
+      });
+
       // Check if this was the last question
       const isLastQuestion = questionIndex === state.questions.length - 1;
+
+      console.groupEnd();
 
       return {
         ...state,
@@ -162,24 +189,61 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
         return state;
       }
 
+      console.group('Quiz Completion');
+      console.log('Current state:', {
+        answers: state.answers,
+        categoryScores: state.categoryScores,
+        questions: state.questions.map(q => ({ id: q.id, category: q.category }))
+      });
+
       // Calculate final scores
       const totalScore = Object.values(state.categoryScores).reduce((sum, score) => sum + score, 0);
-      const maxPossibleScore = state.questions.length * 5; // Assuming max score per question is 5
+      const maxPossibleScore = state.questions.length * 4; // Max score per question is 4 (0-3)
       const percentageScore = Math.round((totalScore / maxPossibleScore) * 100);
 
-      // Calculate category percentages
+      // Calculate category percentages and ensure all categories are present
       const categoryPercentages = Object.entries(state.categoryScores).reduce((acc, [category, score]) => {
         const categoryQuestions = state.questions.filter(q => q.category === category).length;
-        const maxCategoryScore = categoryQuestions * 5;
+        const maxCategoryScore = categoryQuestions * 4; // Max score per question is 4
         acc[category as CategoryKey] = Math.round((score / maxCategoryScore) * 100);
         return acc;
-      }, {} as Record<CategoryKey, number>);
+      }, { ...initialCategoryState } as Record<CategoryKey, number>);
+
+      // Ensure all categories have scores
+      const finalCategoryScores = { ...initialCategoryState } as Record<CategoryKey, number>;
+      Object.entries(state.categoryScores).forEach(([category, score]) => {
+        finalCategoryScores[category as CategoryKey] = score;
+      });
+
+      // Create scores object for results page - normalize to 0-100 range
+      const scores = Object.entries(finalCategoryScores).reduce((acc, [category, score]) => {
+        const categoryQuestions = state.questions.filter(q => q.category === category).length;
+        const maxCategoryScore = categoryQuestions * 4;
+        acc[category as CategoryKey] = Math.round((score / maxCategoryScore) * 100);
+        return acc;
+      }, { ...initialCategoryState } as Record<CategoryKey, number>);
+
+      console.log('Calculated scores:', {
+        totalScore,
+        percentageScore,
+        categoryScores: finalCategoryScores,
+        categoryPercentages,
+        scores,
+        maxPossibleScore,
+        questionsPerCategory: Object.entries(state.categoryScores).map(([category, _]) => ({
+          category,
+          count: state.questions.filter(q => q.category === category).length
+        }))
+      });
+      console.groupEnd();
 
       return {
         ...state,
         totalScore,
         percentageScore,
+        categoryScores: finalCategoryScores,
         categoryPercentages,
+        scores,
         isComplete: true
       };
     }
@@ -190,6 +254,7 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
         ...initialState,
         questions: state.questions,
         isComplete: false,
+        isStarted: false,
         categoryScores: { ...initialCategoryState },
         categoryPercentages: { ...initialCategoryState }
       };
@@ -227,8 +292,9 @@ const initialState: QuizState = {
   totalScore: undefined,
   percentageScore: undefined,
   isComplete: false,
-  isLoading: false, // Start with loading false since we have questions
-  questions: QUESTIONS // Initialize with questions immediately
+  isLoading: false,
+  isStarted: false,
+  questions: QUESTIONS
 };
 
 export function QuizProvider({ children }: { children: React.ReactNode }) {
@@ -238,47 +304,120 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     isLoading: false,
     isComplete: false
   });
-  const [hasInitialized, setHasInitialized] = useState(false);
+  const initializationRef = useRef(false);
+  const processingRef = useRef(false);
+  const lastActionRef = useRef<string | null>(null);
+  const actionQueueRef = useRef<QuizAction[]>([]);
+  const lastAnswerRef = useRef<{ questionId: string; answer: number } | null>(null);
+
+  // Process next action in queue
+  const processNextAction = useCallback(() => {
+    if (processingRef.current || actionQueueRef.current.length === 0) {
+      return;
+    }
+
+    const action = actionQueueRef.current[0];
+    
+    // Skip if this is a duplicate of the last action
+    if (lastActionRef.current === action.type) {
+      console.log('Skipping duplicate action:', action.type);
+      actionQueueRef.current.shift();
+      if (actionQueueRef.current.length > 0) {
+        requestAnimationFrame(processNextAction);
+      }
+      return;
+    }
+
+    processingRef.current = true;
+    lastActionRef.current = action.type;
+
+    try {
+      dispatch(action);
+    } finally {
+      actionQueueRef.current.shift();
+      processingRef.current = false;
+      lastActionRef.current = null;
+      
+      // Process next action if available
+      if (actionQueueRef.current.length > 0) {
+        requestAnimationFrame(processNextAction);
+      }
+    }
+  }, [dispatch]);
+
+  // Wrap dispatch to prevent duplicate actions with improved queueing
+  const safeDispatch = useCallback((action: QuizAction) => {
+    // Skip if trying to start an already started quiz
+    if (action.type === 'START_QUIZ' && state.isStarted) {
+      console.log('Skipping START_QUIZ - quiz already started');
+      return;
+    }
+
+    // Skip if trying to complete an already completed quiz
+    if (action.type === 'COMPLETE_QUIZ' && state.isComplete) {
+      console.log('Skipping COMPLETE_QUIZ - quiz already completed');
+      return;
+    }
+
+    // Skip if trying to answer a question that's already answered
+    if (action.type === 'ANSWER_QUESTION') {
+      const questionId = parseInt(action.questionId);
+      if (state.answers[questionId] !== undefined) {
+        console.warn('Question already answered:', questionId);
+        return;
+      }
+
+      // Skip if this is the same answer as the last one
+      if (lastAnswerRef.current && 
+          lastAnswerRef.current.questionId === action.questionId && 
+          lastAnswerRef.current.answer === action.answer) {
+        console.warn('Duplicate answer detected:', { questionId, answer: action.answer });
+        return;
+      }
+      lastAnswerRef.current = { questionId: action.questionId, answer: action.answer };
+    }
+
+    // Add action to queue
+    actionQueueRef.current.push(action);
+    
+    // Process queue if not already processing
+    if (!processingRef.current) {
+      requestAnimationFrame(processNextAction);
+    }
+  }, [state.isComplete, state.isStarted, state.answers, processNextAction]);
 
   // Single initialization effect
   useEffect(() => {
-    if (!hasInitialized && state.questions.length > 0) {
-      console.group('Quiz Initialization');
-      console.log('Initializing quiz:', {
-        questionCount: state.questions.length,
-        currentQuestion: state.currentQuestion,
-        hasAnswers: Object.keys(state.answers).length > 0,
-        isComplete: state.isComplete
-      });
-
-      setHasInitialized(true);
-      
-      // Only start if not already in progress or complete
-      if (Object.keys(state.answers).length === 0 && !state.isComplete) {
-        dispatch({ type: 'START_QUIZ' });
-      }
-      
-      console.groupEnd();
+    if (!initializationRef.current && !state.isStarted && !state.isComplete) {
+      initializationRef.current = true;
+      console.log('Initializing quiz...');
+      safeDispatch({ type: 'START_QUIZ' });
     }
-  }, [hasInitialized, state.questions.length, state.answers, state.isComplete]);
+  }, [state.isStarted, state.isComplete, safeDispatch]);
 
   // Question validation effect
   useEffect(() => {
-    if (hasInitialized && state.questions.length > 0) {
-      if (state.currentQuestion >= state.questions.length) {
-        console.error('Invalid question index, resetting to last valid question:', {
-          current: state.currentQuestion,
-          max: state.questions.length - 1
-        });
-        dispatch({ type: 'RESET_QUIZ' });
-      }
+    if (state.currentQuestion >= state.questions.length && !state.isComplete) {
+      console.log('Invalid question index, resetting quiz');
+      safeDispatch({ type: 'RESET_QUIZ' });
     }
-  }, [hasInitialized, state.currentQuestion, state.questions.length]);
+  }, [state.currentQuestion, state.questions.length, state.isComplete, safeDispatch]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      processingRef.current = false;
+      lastActionRef.current = null;
+      initializationRef.current = false;
+      actionQueueRef.current = [];
+      lastAnswerRef.current = null;
+    };
+  }, []);
 
   const value = useMemo(() => ({
     state,
-    dispatch
-  }), [state]);
+    dispatch: safeDispatch
+  }), [state, safeDispatch]);
 
   return (
     <QuizContext.Provider value={value}>
