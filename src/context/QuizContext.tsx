@@ -47,7 +47,8 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
       answersCount: Object.keys(state.answers).length,
       isLoading: state.isLoading,
       hasQuestions: state.questions.length > 0,
-      answers: state.answers
+      answers: state.answers,
+      isComplete: state.isComplete
     });
     console.groupEnd();
   }
@@ -63,9 +64,9 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
         };
       }
 
-      // Prevent restarting if already in progress
-      if (Object.keys(state.answers).length > 0) {
-        console.warn('Quiz already in progress, ignoring START_QUIZ');
+      // Prevent restarting if already in progress or complete
+      if (state.isComplete || Object.keys(state.answers).length > 0) {
+        console.warn('Quiz already in progress or complete, ignoring START_QUIZ');
         return state;
       }
 
@@ -74,16 +75,17 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
         ...initialState,
         questions: state.questions,
         currentQuestion: 0,
-        isLoading: false
+        isLoading: false,
+        isComplete: false
       };
     }
 
     case 'ANSWER_QUESTION': {
       const questionId = action.questionId;
       
-      // Skip if already answered or loading
-      if (state.isLoading) {
-        console.warn('Cannot answer while loading');
+      // Skip if already answered, loading, or quiz is complete
+      if (state.isLoading || state.isComplete) {
+        console.warn('Cannot answer while loading or after completion');
         return state;
       }
 
@@ -112,10 +114,14 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
       const optionScore = question.options[action.answer].score;
       newCategoryScores[question.category] = (newCategoryScores[question.category] || 0) + optionScore;
 
+      // Check if this was the last question
+      const isLastQuestion = questionIndex === state.questions.length - 1;
+
       return {
         ...state,
         answers: newAnswers,
-        categoryScores: newCategoryScores
+        categoryScores: newCategoryScores,
+        isComplete: isLastQuestion
       };
     }
 
@@ -145,12 +151,43 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
       };
     }
 
-    case 'RESET_QUIZ':
+    case 'COMPLETE_QUIZ': {
+      // Only allow completion if all questions are answered
+      if (Object.keys(state.answers).length !== state.questions.length) {
+        console.warn('Cannot complete quiz: Not all questions answered');
+        return state;
+      }
+
+      // Calculate final scores
+      const totalScore = Object.values(state.categoryScores).reduce((sum, score) => sum + score, 0);
+      const maxPossibleScore = state.questions.length * 5; // Assuming max score per question is 5
+      const percentageScore = Math.round((totalScore / maxPossibleScore) * 100);
+
+      // Calculate category percentages
+      const categoryPercentages = Object.entries(state.categoryScores).reduce((acc, [category, score]) => {
+        const categoryQuestions = state.questions.filter(q => q.category === category).length;
+        const maxCategoryScore = categoryQuestions * 5;
+        acc[category as CategoryKey] = Math.round((score / maxCategoryScore) * 100);
+        return acc;
+      }, {} as Record<CategoryKey, number>);
+
+      return {
+        ...state,
+        totalScore,
+        percentageScore,
+        categoryPercentages,
+        isComplete: true
+      };
+    }
+
+    case 'RESET_QUIZ': {
       // Preserve questions but reset everything else
       return {
         ...initialState,
-        questions: state.questions
+        questions: state.questions,
+        isComplete: false
       };
+    }
 
     case 'SET_LOADING':
       return {
@@ -191,8 +228,9 @@ const initialState: QuizState = {
 export function QuizProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(quizReducer, {
     ...initialState,
-    questions: QUESTIONS, // Initialize with questions
-    isLoading: false // Start with loading false since we have questions
+    questions: QUESTIONS,
+    isLoading: false,
+    isComplete: false
   });
   const [hasInitialized, setHasInitialized] = useState(false);
 
@@ -203,19 +241,20 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       console.log('Initializing quiz:', {
         questionCount: state.questions.length,
         currentQuestion: state.currentQuestion,
-        hasAnswers: Object.keys(state.answers).length > 0
+        hasAnswers: Object.keys(state.answers).length > 0,
+        isComplete: state.isComplete
       });
 
       setHasInitialized(true);
       
-      // Only start if not already in progress
-      if (Object.keys(state.answers).length === 0) {
+      // Only start if not already in progress or complete
+      if (Object.keys(state.answers).length === 0 && !state.isComplete) {
         dispatch({ type: 'START_QUIZ' });
       }
       
       console.groupEnd();
     }
-  }, [hasInitialized, state.questions.length, state.answers]);
+  }, [hasInitialized, state.questions.length, state.answers, state.isComplete]);
 
   // Question validation effect
   useEffect(() => {

@@ -12,37 +12,23 @@ import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { useRouter } from 'next/router';
 
 export default function QuizPage() {
-  const { state, dispatch } = useQuiz();
   const router = useRouter();
-  const [selectedValue, setSelectedValue] = useState<number | undefined>(undefined);
+  const { state, dispatch } = useQuiz();
+  const [selectedValue, setSelectedValue] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
   
   // Memoize current question with validation
   const currentQuestion = useMemo(() => {
     if (!Array.isArray(state.questions) || state.questions.length === 0) {
-      console.error('Questions array is invalid:', {
-        isArray: Array.isArray(state.questions),
-        length: state.questions?.length
-      });
+      console.error('Invalid questions array');
       return null;
     }
-
     if (state.currentQuestion < 0 || state.currentQuestion >= state.questions.length) {
-      console.error('Current question index out of bounds:', {
-        index: state.currentQuestion,
-        length: state.questions.length
-      });
+      console.error('Invalid question index:', state.currentQuestion);
       return null;
     }
-
-    const question = state.questions[state.currentQuestion];
-    if (!question) {
-      console.error('Question not found at index:', state.currentQuestion);
-      return null;
-    }
-
-    return question;
+    return state.questions[state.currentQuestion];
   }, [state.questions, state.currentQuestion]);
 
   const isLastQuestion = useMemo(() => 
@@ -52,74 +38,65 @@ export default function QuizPage() {
 
   // Single initialization effect
   useEffect(() => {
+    console.log('Quiz Page Mount');
+    console.log('Initial State:', {
+      currentQuestion: state.currentQuestion,
+      questionsCount: state.questions.length,
+      hasAnswers: Object.keys(state.answers).length > 0,
+      isComplete: state.isComplete
+    });
+
     if (!hasInitialized && state.questions.length > 0) {
-      console.group('Quiz Page Mount');
-      console.log('Initial State:', {
-        hasInitialized,
-        questionsCount: state.questions.length,
-        currentQuestion: state.currentQuestion,
-        hasAnswers: Object.keys(state.answers).length > 0
-      });
       setHasInitialized(true);
-      console.groupEnd();
     }
-  }, [hasInitialized, state.questions.length, state.currentQuestion, state.answers]);
+  }, [hasInitialized, state.questions.length, state.answers, state.isComplete]);
 
   // Navigation guard effect
   useEffect(() => {
     if (hasInitialized && state.questions.length > 0) {
       if (state.currentQuestion >= state.questions.length) {
-        console.error('Invalid navigation state:', {
-          currentQuestion: state.currentQuestion,
-          totalQuestions: state.questions.length
+        console.error('Invalid question index, resetting to last valid question:', {
+          current: state.currentQuestion,
+          max: state.questions.length - 1
         });
-        router.push('/');
+        dispatch({ type: 'RESET_QUIZ' });
       }
     }
-  }, [hasInitialized, state.questions.length, state.currentQuestion, router]);
+  }, [hasInitialized, state.currentQuestion, state.questions.length, dispatch]);
+
+  // Quiz completion effect
+  useEffect(() => {
+    if (state.isComplete && !isSubmitting) {
+      console.log('Quiz completed, navigating to email capture');
+      setIsSubmitting(true);
+      router.push('/email-capture');
+    }
+  }, [state.isComplete, router, isSubmitting]);
 
   const handleAnswer = useCallback(async (value: number) => {
-    if (isSubmitting || !currentQuestion) {
-      console.warn('Cannot submit answer:', {
-        isSubmitting,
-        hasCurrentQuestion: !!currentQuestion
-      });
-      return;
-    }
+    if (isSubmitting || !currentQuestion) return;
+
+    console.log('Answer Submission');
+    console.log('Processing answer:', {
+      questionId: currentQuestion.id,
+      value,
+      currentQuestion: state.currentQuestion,
+      totalQuestions: state.questions.length
+    });
 
     setIsSubmitting(true);
-    try {
-      console.group('Answer Submission');
-      console.log('Processing answer:', {
-        questionIndex: state.currentQuestion,
-        value,
-        isLast: isLastQuestion,
-        currentAnswers: state.answers
-      });
+    dispatch({ type: 'ANSWER_QUESTION', questionId: currentQuestion.id.toString(), answer: value });
 
-      // Submit answer
-      dispatch({
-        type: 'ANSWER_QUESTION',
-        questionId: state.currentQuestion.toString(),
-        answer: value,
-      });
-
-      setSelectedValue(value);
-
-      // Move to next question after a brief delay
-      if (!isLastQuestion) {
-        await new Promise(resolve => setTimeout(resolve, 300));
-        dispatch({ type: 'NEXT_QUESTION' });
-        setSelectedValue(undefined);
-      }
-
-      console.groupEnd();
-    } catch (error) {
-      console.error('Error submitting answer:', error);
-    } finally {
-      setIsSubmitting(false);
+    // If this is the last question, complete the quiz
+    if (state.currentQuestion === state.questions.length - 1) {
+      dispatch({ type: 'COMPLETE_QUIZ' });
+    } else {
+      dispatch({ type: 'NEXT_QUESTION' });
     }
-  }, [dispatch, isLastQuestion, isSubmitting, state.currentQuestion, currentQuestion, state.answers]);
+
+    setSelectedValue(null);
+    setIsSubmitting(false);
+  }, [currentQuestion, state.currentQuestion, state.questions.length, dispatch, isSubmitting]);
 
   const handleSeeScoreClick = useCallback(async () => {
     if (isSubmitting) return;
