@@ -108,25 +108,12 @@ export default function ResultsPage() {
       categoryPercentages: state.categoryPercentages
     });
 
-    // Validate required state
-    if (!state.isComplete || !state.scores || !state.categoryPercentages) {
-      console.error('Invalid results state:', {
+    // Validate required state: quiz must be complete and scores must have been calculated
+    if (!state.isComplete || state.percentageScore === undefined) {
+      console.error('Invalid results state — quiz not complete or scores not calculated:', {
         isComplete: state.isComplete,
-        hasScores: !!state.scores,
-        hasCategoryPercentages: !!state.categoryPercentages
+        percentageScore: state.percentageScore,
       });
-      router.push('/quiz');
-      return;
-    }
-
-    // Validate all required categories are present
-    const requiredCategories: CategoryKey[] = ['process', 'strategy', 'insight', 'culture'];
-    const missingCategories = requiredCategories.filter(cat => 
-      !state.categoryPercentages[cat] || !state.scores[cat]
-    );
-
-    if (missingCategories.length > 0) {
-      console.error('Missing category data:', missingCategories);
       router.push('/quiz');
       return;
     }
