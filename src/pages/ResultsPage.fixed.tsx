@@ -2,8 +2,7 @@ import React, { useEffect } from 'react';
 import { useQuiz } from '../context/QuizContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
-import { IconBrandX, IconBrandLinkedin, IconMail, IconFlask, IconRocket, IconBrain, IconTrophy } from '@tabler/icons-react';
+import { IconBrandX, IconBrandLinkedin, IconCalendar, IconFlask, IconRocket, IconBrain, IconTrophy } from '@tabler/icons-react';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { RadarChart } from '../components/ui/RadarChart';
 import { ScoreCard } from '../components/ui/ScoreCard';
@@ -51,30 +50,21 @@ export const CATEGORY_DESCRIPTIONS: Record<CategoryKey, Record<'low' | 'medium' 
   }
 };
 
-// Success Stories Data
-const SUCCESS_STORIES = [
-  {
-    title: "Implementing A/B Testing Culture",
-    category: "E-commerce",
-    challenge: "Low conversion rates and lack of data-driven decision making",
-    solution: "Implemented systematic A/B testing program and built testing infrastructure",
-    impact: "40% increase in conversion rate within 6 months"
-  },
-  {
-    title: "Scaling Experimentation Program",
-    category: "SaaS Platform",
-    challenge: "Limited testing capacity and slow iteration cycles",
-    solution: "Developed automated testing pipeline and democratized experimentation",
-    impact: "10x increase in experiments run per month"
-  },
-  {
-    title: "Advanced Multi-Variant Testing",
-    category: "Enterprise",
-    challenge: "Complex user journey optimization requirements",
-    solution: "Implemented sophisticated testing and compliance controls",
-    impact: "200% increase in user engagement"
+// Score-based next-step routing
+const getNextStep = (score: number): { text: string; linkText: string; href: string } => {
+  if (score > 75) {
+    return {
+      text: "Based on your score, you'd be a strong fit for the",
+      linkText: "Experimentation Accelerator®",
+      href: "https://kyznacademy.com/accelerator/",
+    };
   }
-];
+  return {
+    text: "Based on where you are, a",
+    linkText: "Conversion Clarity Call",
+    href: "https://cal.com/kyznacademy/clarity",
+  };
+};
 
 // Helper functions
 const getScoreLevelInfo = (score: number): ScoreLevelInfo => {
@@ -124,6 +114,7 @@ export default function ResultsPage() {
 
   // Determine persona based on score
   const persona = getPersona(percentageScore);
+  const nextStep = getNextStep(percentageScore);
 
   // Add loading state
   if (state.isLoading || !state.scores || !state.categoryPercentages) {
@@ -203,12 +194,24 @@ export default function ResultsPage() {
               <div className="flex flex-col items-center space-y-12">
                 <AnimatedScore score={percentageScore} size="lg" />
 
-                <div className="w-full max-w-2xl space-y-8 animate-fade-in">
+                <div className="w-full max-w-2xl space-y-6 animate-fade-in">
                   <h1 className="text-center text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-500 to-primary-700 dark:from-primary-400 dark:to-primary-600">
                     {persona.title}
                   </h1>
                   <p className="text-center text-xl text-gray-600 dark:text-gray-300">
                     {persona.description}
+                  </p>
+                  <p className="text-center text-base text-muted-foreground">
+                    {nextStep.text}{' '}
+                    <a
+                      href={nextStep.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-primary underline underline-offset-4 hover:text-primary/80 transition-colors"
+                    >
+                      {nextStep.linkText}
+                    </a>
+                    {percentageScore > 75 ? '.' : ' would give you the most immediate direction.'}
                   </p>
                 </div>
               </div>
@@ -300,58 +303,14 @@ export default function ResultsPage() {
           </div>
         </section>
 
-        {/* Success Stories */}
-        <section className="space-y-12 scroll-m-20" id="success-stories">
-          <div className="text-center space-y-6">
-            <h2 className="text-4xl font-bold">Success Stories</h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Discover how other organizations have successfully improved their experimentation programs.
-              These case studies demonstrate the impact of implementing our recommendations.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {SUCCESS_STORIES.map((story, index) => (
-              <Card 
-                key={index} 
-                className="bg-gray-50/50 dark:bg-gray-900/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
-              >
-                <CardHeader>
-                  <Badge 
-                    variant="default" 
-                    className="w-fit px-3 py-1 text-xs font-medium"
-                  >
-                    {story.category}
-                  </Badge>
-                  <CardTitle className="text-xl mt-2">{story.title}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Challenge</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{story.challenge}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Solution</h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{story.solution}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Impact</h4>
-                    <p className="text-sm text-primary-600 dark:text-primary-400 font-medium">{story.impact}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-
         {/* Call to Action */}
         <section className="space-y-8">
           <Card className="bg-gradient-to-br from-primary-50 via-primary-100/50 to-primary-200/30 dark:from-primary-950 dark:via-primary-900/50 dark:to-primary-800/30">
             <CardContent className="pt-16 pb-12">
               <div className="text-center space-y-8">
-                <h2 className="text-4xl font-bold">Ready to Level Up?</h2>
+                <h2 className="text-4xl font-bold">What&apos;s Next?</h2>
                 <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                  Take the next step in your experimentation journey. Our team of experts can help you implement these recommendations and accelerate your program's growth.
+                  Share your results, or book a call to talk through what the recommendations mean for your programme in practice.
                 </p>
 
                 <div className="flex flex-wrap gap-6 justify-center">
@@ -371,12 +330,13 @@ export default function ResultsPage() {
                     <IconBrandLinkedin className="mr-2 h-4 w-4" />
                     Share on LinkedIn
                   </Button>
-                  <Button 
+                  <Button
                     variant="default"
+                    onClick={() => window.open('https://cal.com/kyznacademy/intro', '_blank')}
                     className="min-w-[200px] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                   >
-                    <IconMail className="mr-2 h-4 w-4" />
-                    Contact Sales
+                    <IconCalendar className="mr-2 h-4 w-4" />
+                    Book a Call
                   </Button>
                 </div>
               </div>
