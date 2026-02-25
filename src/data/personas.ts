@@ -3,6 +3,7 @@ import { type CategoryKey } from '../types';
 export type Persona = {
   title: string;
   description: string;
+  imageUrl?: string;
   recommendations: Array<{
     category: CategoryKey;
     title: string;
@@ -13,6 +14,7 @@ export type Persona = {
 export const PERSONAS: Record<'novice' | 'beginner' | 'intermediate' | 'advanced' | 'expert', Persona> = {
   novice: {
     title: "The Ad-Hoc Tester",
+    imageUrl: '/images/personas/novice.png',
     description: "Testing happens reactively — when someone has an idea or a problem surfaces. There's no formal programme, and decisions are still largely driven by stakeholder opinion rather than evidence. The upside: you have significant headroom, and the foundational moves at this stage create compounding returns.",
     recommendations: [
       {
@@ -39,6 +41,7 @@ export const PERSONAS: Record<'novice' | 'beginner' | 'intermediate' | 'advanced
   },
   beginner: {
     title: "The Structured Starter",
+    imageUrl: '/images/personas/beginner.png',
     description: "You have some testing infrastructure in place and are running experiments with a degree of regularity. Processes exist but aren't consistently followed, and statistical rigour is still developing. The priority now is replacing informal norms with documented standards before bad habits become entrenched.",
     recommendations: [
       {
@@ -65,6 +68,7 @@ export const PERSONAS: Record<'novice' | 'beginner' | 'intermediate' | 'advanced
   },
   intermediate: {
     title: "The Scaling Optimiser",
+    imageUrl: '/images/personas/intermediate.png',
     description: "You're running a functioning programme with documented processes and growing participation across teams. The challenge now is maintaining quality and statistical integrity as test velocity increases. Programmes at this stage often reach a plateau — the next level requires deliberate investment in methodology and organisational reach.",
     recommendations: [
       {
@@ -91,6 +95,7 @@ export const PERSONAS: Record<'novice' | 'beginner' | 'intermediate' | 'advanced
   },
   advanced: {
     title: "The Data-Driven Programme",
+    imageUrl: '/images/personas/advanced.png',
     description: "Your programme is strategically aligned, statistically rigorous, and has meaningful cross-functional buy-in. The focus now is on compounding learnings, increasing the programme's influence on major product and business decisions, and investing in the infrastructure that sustains high velocity without sacrificing quality.",
     recommendations: [
       {
@@ -117,6 +122,7 @@ export const PERSONAS: Record<'novice' | 'beginner' | 'intermediate' | 'advanced
   },
   expert: {
     title: "The Experimentation-Led Organisation",
+    imageUrl: '/images/personas/best.png',
     description: "Experimentation is embedded in how your organisation makes decisions at all levels. You have the infrastructure, culture, and analytical depth to compound learnings at scale. The challenge at this stage is sustaining rigour as the programme grows, and continuing to extract strategic value from an asset — accumulated experimental knowledge — that most organisations never fully exploit.",
     recommendations: [
       {
