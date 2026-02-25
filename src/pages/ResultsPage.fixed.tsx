@@ -182,6 +182,14 @@ export default function ResultsPage() {
               <div className="flex flex-col items-center space-y-6 sm:space-y-12">
                 <AnimatedScore score={percentageScore} size="lg" />
 
+                {persona.imageUrl && (
+                  <img
+                    src={persona.imageUrl}
+                    alt={persona.title}
+                    className="h-48 sm:h-64 w-auto object-contain drop-shadow-md"
+                  />
+                )}
+
                 <div className="w-full max-w-2xl space-y-6 animate-fade-in">
                   <h1 className="text-center text-3xl sm:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-500 to-primary-700 dark:from-primary-400 dark:to-primary-600">
                     {persona.title}
