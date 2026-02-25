@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useQuiz } from '../context/QuizContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { IconBrandX, IconBrandLinkedin, IconCalendar, IconFlask, IconRocket, IconBrain, IconTrophy } from '@tabler/icons-react';
+import { IconCalendar, IconFlask, IconRocket, IconBrain, IconTrophy } from '@tabler/icons-react';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { RadarChart } from '../components/ui/RadarChart';
 import { ScoreCard } from '../components/ui/ScoreCard';
@@ -170,18 +170,6 @@ export default function ResultsPage() {
     return CATEGORY_DESCRIPTIONS[category][level];
   };
 
-  const handleShare = (platform: 'twitter' | 'linkedin') => {
-    const url = window.location.href;
-    const text = `Check out my Experimentation Maturity Assessment results! My score: ${percentageScore}%`;
-    
-    const shareUrls = {
-      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
-      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
-    };
-
-    window.open(shareUrls[platform], '_blank');
-  };
-
   return (
     <div className="min-h-screen p-8">
       <ThemeToggle className="absolute top-4 right-4" />
@@ -314,22 +302,6 @@ export default function ResultsPage() {
                 </p>
 
                 <div className="flex flex-wrap gap-6 justify-center">
-                  <Button
-                    variant="outline"
-                    onClick={() => handleShare('twitter')}
-                    className="min-w-[200px] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
-                  >
-                    <IconBrandX className="mr-2 h-4 w-4" />
-                    Share on X
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleShare('linkedin')}
-                    className="min-w-[200px] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
-                  >
-                    <IconBrandLinkedin className="mr-2 h-4 w-4" />
-                    Share on LinkedIn
-                  </Button>
                   <Button
                     variant="default"
                     onClick={() => window.open('https://cal.com/kyznacademy/intro', '_blank')}

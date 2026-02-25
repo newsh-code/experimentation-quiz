@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/router';
 import { useQuiz } from '../context/QuizContext';
+import { PERSONAS } from '../data/personas';
 import { generatePDFReport } from '../services/pdfService';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Button } from '../components/ui/Button';
@@ -47,6 +48,24 @@ export default function EmailCapturePage() {
         email,
         userData,
       });
+
+      // Fire-and-forget: subscribe to MailerLite (only when email is provided)
+      if (email) {
+        const score = state.percentageScore ?? 0;
+        const level =
+          score < 20 ? 'novice'
+          : score < 40 ? 'beginner'
+          : score < 60 ? 'intermediate'
+          : score < 80 ? 'advanced'
+          : 'expert';
+        const personaName = PERSONAS[level].title;
+
+        fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, name, company, score, personaName }),
+        }).catch(err => console.error('MailerLite subscription failed:', err));
+      }
 
       await generatePDFReport({
         ...state,
