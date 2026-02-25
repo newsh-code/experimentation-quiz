@@ -28,7 +28,7 @@ export const PERSONAS: Record<'novice' | 'beginner' | 'intermediate' | 'advanced
       {
         category: 'insight',
         title: 'Instrument Your Baseline',
-        description: 'Before running tests, establish reliable baseline metrics. Verify your analytics are firing correctly and gather at least four weeks of clean data to inform sample size calculations — decisions made on bad data are worse than no data at all.'
+        description: 'Before running tests, establish reliable baseline metrics. Verify your analytics are firing correctly and gather at least four weeks of clean data to inform sample size calculations. A practical first check: compare your testing tool\'s visitor counts against your analytics platform over the same window — a discrepancy of more than 5% is a red flag that needs resolving before any test starts.'
       },
       {
         category: 'culture',
@@ -137,7 +137,7 @@ export const PERSONAS: Record<'novice' | 'beginner' | 'intermediate' | 'advanced
       {
         category: 'culture',
         title: 'Export Your Culture',
-        description: 'The most mature programmes actively share their methodology externally — through industry events, published case studies, and open-sourced tooling. External visibility attracts talent, reinforces internal standards through outside scrutiny, and extends your organisation\'s influence on how the discipline evolves.'
+        description: 'Identify one practitioner in your team who can represent your methodology publicly — at CXL Live, Experimentation Elite, or in published teardowns on LinkedIn. The process of preparing external content forces internal teams to articulate and defend their methods in ways no internal review achieves. It also attracts senior experimentation talent who specifically seek organisations that take the craft seriously.'
       }
     ]
   }
