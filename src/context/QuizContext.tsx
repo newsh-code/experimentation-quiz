@@ -148,11 +148,36 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
 
       console.groupEnd();
 
+      // For the last question, calculate all final scores atomically so the
+      // results page always has valid data regardless of COMPLETE_QUIZ timing.
+      if (isLastQuestion) {
+        const totalScore = Object.values(newCategoryScores).reduce((sum, s) => sum + s, 0);
+        const maxPossibleScore = state.questions.length * 4;
+        const percentageScore = Math.round((totalScore / maxPossibleScore) * 100);
+
+        const categoryPercentages = Object.entries(newCategoryScores).reduce((acc, [category, score]) => {
+          const categoryQuestions = state.questions.filter(q => q.category === category).length;
+          const maxCategoryScore = categoryQuestions * 4;
+          acc[category as CategoryKey] = Math.round((score / maxCategoryScore) * 100);
+          return acc;
+        }, { ...initialCategoryState } as Record<CategoryKey, number>);
+
+        return {
+          ...state,
+          answers: newAnswers,
+          categoryScores: newCategoryScores,
+          categoryPercentages,
+          scores: { ...categoryPercentages },
+          totalScore,
+          percentageScore,
+          isComplete: true
+        };
+      }
+
       return {
         ...state,
         answers: newAnswers,
         categoryScores: newCategoryScores,
-        isComplete: isLastQuestion
       };
     }
 
