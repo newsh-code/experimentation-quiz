@@ -285,6 +285,19 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
       };
     }
 
+    case 'SUBMIT_EMAIL': {
+      return {
+        ...state,
+        email: action.email,
+        userData: action.userData,
+      };
+    }
+
+    case 'SKIP_EMAIL': {
+      // No state change needed — explicit case avoids silent default fallthrough
+      return state;
+    }
+
     case 'SET_LOADING':
       return {
         ...state,
