@@ -6,11 +6,10 @@ import { PERSONAS } from '../data/personas';
 import { generatePDFReport } from '../services/pdfService';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Button } from '../components/ui/Button';
-import { Card, CardHeader, CardContent } from '../components/ui/Card';
+import { Card, CardContent } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Alert, AlertDescription } from '../components/ui/Alert';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/Dialog';
 import { cn } from '../lib/utils';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 
@@ -27,7 +26,6 @@ export default function EmailCapturePage() {
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -73,14 +71,11 @@ export default function EmailCapturePage() {
         userData,
       });
 
-      setShowSuccessDialog(true);
-      
-      setTimeout(() => {
-        router.push('/results');
-      }, 2000);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      setError('Failed to generate PDF report. Please try again.');
+      // Navigate immediately — no delay to avoid mobile state loss
+      router.push('/results');
+    } catch (err) {
+      console.error('Error generating report:', err);
+      setError('Failed to generate report. Please try again.');
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -96,7 +91,7 @@ export default function EmailCapturePage() {
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
-      
+
       <div className="container max-w-lg mx-auto px-4 py-16">
         <motion.div
           initial="initial"
@@ -122,9 +117,9 @@ export default function EmailCapturePage() {
 
           <Card className="bg-card/50 backdrop-blur-sm border-2">
             <CardContent className="pt-6">
-              <motion.form 
-                variants={fadeInUp} 
-                onSubmit={handleSubmit} 
+              <motion.form
+                variants={fadeInUp}
+                onSubmit={handleSubmit}
                 className="space-y-6"
               >
                 <div className="space-y-4">
@@ -185,7 +180,7 @@ export default function EmailCapturePage() {
                     {isGeneratingPDF ? (
                       <div className="flex items-center justify-center space-x-2">
                         <LoadingSpinner size="small" />
-                        <span>Generating Report...</span>
+                        <span>Loading results...</span>
                       </div>
                     ) : (
                       'Get My Report'
@@ -212,19 +207,6 @@ export default function EmailCapturePage() {
           </Card>
         </motion.div>
       </div>
-
-      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-              <span className="text-2xl">🎉</span> Report Generated!
-            </DialogTitle>
-            <p className="text-muted-foreground pt-2">
-              Your report has been generated and downloaded. Taking you to your results...
-            </p>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
     </div>
   );
-} 
+}
