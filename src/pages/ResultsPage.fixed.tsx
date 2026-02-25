@@ -171,22 +171,22 @@ export default function ResultsPage() {
   };
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-screen p-4 sm:p-8">
       <ThemeToggle className="absolute top-4 right-4" />
-      <div className="min-h-screen py-12 space-y-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen py-8 sm:py-12 space-y-12 sm:space-y-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Hero Section with Score */}
         <section className="relative">
           <Card className="relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-primary-50/30 via-primary-100/20 to-transparent dark:from-primary-950/30 dark:via-primary-900/20 dark:to-transparent pointer-events-none" />
-            <CardContent className="pt-16 pb-12">
-              <div className="flex flex-col items-center space-y-12">
+            <CardContent className="pt-8 pb-8 sm:pt-16 sm:pb-12">
+              <div className="flex flex-col items-center space-y-6 sm:space-y-12">
                 <AnimatedScore score={percentageScore} size="lg" />
 
                 <div className="w-full max-w-2xl space-y-6 animate-fade-in">
-                  <h1 className="text-center text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-500 to-primary-700 dark:from-primary-400 dark:to-primary-600">
+                  <h1 className="text-center text-3xl sm:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-500 to-primary-700 dark:from-primary-400 dark:to-primary-600">
                     {persona.title}
                   </h1>
-                  <p className="text-center text-xl text-gray-600 dark:text-gray-300">
+                  <p className="text-center text-base sm:text-xl text-gray-600 dark:text-gray-300">
                     {persona.description}
                   </p>
                   <p className="text-center text-base text-muted-foreground">
@@ -208,16 +208,16 @@ export default function ResultsPage() {
         </section>
 
         {/* Performance Overview */}
-        <section className="space-y-12 scroll-m-20" id="performance">
-          <div className="text-center space-y-6">
-            <h2 className="text-4xl font-bold">Your Performance Profile</h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        <section className="space-y-6 sm:space-y-12 scroll-m-20" id="performance">
+          <div className="text-center space-y-3 sm:space-y-6">
+            <h2 className="text-2xl sm:text-4xl font-bold">Your Performance Profile</h2>
+            <p className="text-base sm:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
               See how you score across the four key dimensions of experimentation maturity.
               Each score reflects your current capabilities and highlights areas for growth.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 gap-4 sm:gap-8">
             {Object.entries(state.scores).map(([category, score]) => {
               const categoryKey = category as CategoryKey;
               const scoreLevelInfo = getScoreLevelInfo(score ?? 0);
@@ -260,16 +260,16 @@ export default function ResultsPage() {
         </section>
 
         {/* Recommendations */}
-        <section className="space-y-12 scroll-m-20" id="recommendations">
-          <div className="text-center space-y-6">
-            <h2 className="text-4xl font-bold">Personalized Recommendations</h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        <section className="space-y-6 sm:space-y-12 scroll-m-20" id="recommendations">
+          <div className="text-center space-y-3 sm:space-y-6">
+            <h2 className="text-2xl sm:text-4xl font-bold">Personalized Recommendations</h2>
+            <p className="text-base sm:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
               Based on your assessment results, we've identified key areas where you can improve your experimentation program.
               Focus on these recommendations to advance your maturity level.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 gap-4 sm:gap-8">
             {persona.recommendations.map((recommendation: { category: CategoryKey; title: string; description: string }, index: number) => (
               <Card 
                 key={index} 
@@ -292,12 +292,12 @@ export default function ResultsPage() {
         </section>
 
         {/* Call to Action */}
-        <section className="space-y-8">
+        <section className="space-y-4 sm:space-y-8">
           <Card className="bg-gradient-to-br from-primary-50 via-primary-100/50 to-primary-200/30 dark:from-primary-950 dark:via-primary-900/50 dark:to-primary-800/30">
-            <CardContent className="pt-16 pb-12">
-              <div className="text-center space-y-8">
-                <h2 className="text-4xl font-bold">What&apos;s Next?</h2>
-                <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            <CardContent className="pt-8 pb-8 sm:pt-16 sm:pb-12">
+              <div className="text-center space-y-4 sm:space-y-8">
+                <h2 className="text-2xl sm:text-4xl font-bold">What&apos;s Next?</h2>
+                <p className="text-base sm:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
                   Share your results, or book a call to talk through what the recommendations mean for your programme in practice.
                 </p>
 

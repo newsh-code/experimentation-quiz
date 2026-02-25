@@ -236,7 +236,7 @@ export default function QuizPage() {
       <div className="fixed top-4 right-4 z-50">
         <ThemeToggle />
       </div>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8">
         <div className="max-w-2xl mx-auto">
           <div className="space-y-4 mb-8">
             <div className="flex justify-between items-center">
@@ -264,7 +264,7 @@ export default function QuizPage() {
           </div>
           
           <Card className="mb-8">
-            <CardContent className="pt-6">
+            <CardContent className="pt-4 sm:pt-6">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={state.currentQuestion}
@@ -273,11 +273,11 @@ export default function QuizPage() {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <h2 className="text-2xl font-bold mb-6">{currentQuestion?.text}</h2>
+                  <h2 className="text-lg sm:text-2xl font-bold mb-4 sm:mb-6">{currentQuestion?.text}</h2>
                   <RadioGroup
                     value={selectedValue}
                     onChange={handleAnswer}
-                    className="space-y-4"
+                    className="space-y-2 sm:space-y-4"
                     disabled={isSubmitting}
                   >
                     {currentQuestion?.options.map((option: { text: string; score: number }, index) => (
@@ -286,9 +286,9 @@ export default function QuizPage() {
                         value={index}
                         className={({ checked }) =>
                           cn(
-                            'relative flex cursor-pointer rounded-lg px-5 py-4 shadow-md focus:outline-none',
+                            'relative flex cursor-pointer rounded-lg px-3 py-3 sm:px-5 sm:py-4 shadow-md focus:outline-none',
                             'hover:bg-accent/50 transition-colors duration-200',
-                            'min-h-[80px] w-full',
+                            'min-h-[60px] sm:min-h-[80px] w-full',
                             checked
                               ? 'bg-primary text-primary-foreground border-2 border-primary'
                               : 'bg-card border-2 border-border hover:border-primary/50',
