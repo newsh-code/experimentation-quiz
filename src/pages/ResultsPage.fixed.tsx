@@ -63,6 +63,132 @@ const CATEGORY_ICONS: Record<CategoryKey, React.ReactNode> = {
   ),
 };
 
+// ── P4: Bucket-based recommendations ─────────────────────────────────────────
+
+type RecommendationBucket = 'early_stage' | 'tool_heavy' | 'process_strong' | 'insight_rich' | 'high_maturity';
+
+interface Recommendation {
+  icon: CategoryKey;
+  title: string;
+  description: string;
+}
+
+const BUCKET_RECOMMENDATIONS: Record<RecommendationBucket, { label: string; recs: Recommendation[] }> = {
+  early_stage: {
+    label: 'Early Stage',
+    recs: [
+      {
+        icon: 'process',
+        title: 'Build your first structured experiment framework',
+        description: "You don't need elaborate tooling yet. Start with a simple hypothesis-driven test brief that documents your assumption, metric, and expected outcome before every test.",
+      },
+      {
+        icon: 'strategy',
+        title: 'Align experimentation with one business goal',
+        description: 'Without a clear commercial anchor, experiments produce data but no decisions. Pick one growth or retention metric and make every test this quarter answer a question about it.',
+      },
+      {
+        icon: 'culture',
+        title: 'Run a weekly 30-minute experiment review',
+        description: 'Consistency beats sophistication at this stage. A standing review where you share what ran, what you learned, and what runs next builds the habit infrastructure everything else depends on.',
+      },
+    ],
+  },
+  tool_heavy: {
+    label: 'Tool-Heavy',
+    recs: [
+      {
+        icon: 'strategy',
+        title: 'Turn test results into strategic hypotheses',
+        description: 'Your tooling is ahead of your thinking. Before each test, write a one-sentence learning objective that connects to a customer behaviour or business outcome — not just a conversion lift target.',
+      },
+      {
+        icon: 'insight',
+        title: 'Map your top experiments to revenue impact',
+        description: 'Velocity is only valuable if it compounds. Apply a simple impact model to your last 10 tests to identify which categories of insight drive the most commercial value.',
+      },
+      {
+        icon: 'process',
+        title: 'Assign an insight owner for every test',
+        description: 'Data without ownership becomes noise. Designate someone responsible for synthesising learnings per test and feeding them into your roadmap — this closes the loop between test output and strategic input.',
+      },
+    ],
+  },
+  process_strong: {
+    label: 'Process-Strong',
+    recs: [
+      {
+        icon: 'strategy',
+        title: 'Present experiment ROI to a senior stakeholder',
+        description: 'You have the operational rigour; now build the language for the boardroom. Translate your best recent test result into a revenue or retention equivalent and present it upward.',
+      },
+      {
+        icon: 'culture',
+        title: 'Create a cross-functional experiment readout',
+        description: 'Process strength is often invisible to other teams. A monthly readout showing what you tested, what you learned, and what changed builds the organisational credibility you need for budget and resource conversations.',
+      },
+      {
+        icon: 'insight',
+        title: "Document experimentation impact in your OKR cycle",
+        description: "If your experiments aren't referenced in planning conversations, they're treated as optional. Integrate at least one experiment-derived insight into your next OKR or quarterly review.",
+      },
+    ],
+  },
+  insight_rich: {
+    label: 'Insight-Rich',
+    recs: [
+      {
+        icon: 'process',
+        title: 'Increase test volume without sacrificing quality',
+        description: 'Your analysis capability outpaces your output. Introduce a tiered test classification — quick wins vs. learning tests — to ship faster on the former while protecting the rigour you apply to the latter.',
+      },
+      {
+        icon: 'insight',
+        title: 'Build a hypothesis backlog from your insights',
+        description: 'Your existing insights likely contain 10–15 untested hypotheses. Run a structured backlog session to extract them, prioritise by expected impact, and get three into the queue within a fortnight.',
+      },
+      {
+        icon: 'strategy',
+        title: 'Translate insights into a repeatable test playbook',
+        description: 'Strong insight work tends to stay in individual heads. Document patterns from your analysis — what types of changes move what types of metrics — into a reusable playbook that accelerates test design.',
+      },
+    ],
+  },
+  high_maturity: {
+    label: 'High Maturity',
+    recs: [
+      {
+        icon: 'strategy',
+        title: 'Systematise how experimentation informs roadmap',
+        description: 'At this level, the risk is that experimentation runs parallel to strategy rather than driving it. Formalise a process where test-derived insights have a named route into product or growth planning.',
+      },
+      {
+        icon: 'insight',
+        title: 'Build the internal case for programme investment',
+        description: 'You have the results to justify resources. Compile a commercial impact summary — tests run, uplift generated, decisions influenced — and use it proactively in budget cycles.',
+      },
+      {
+        icon: 'culture',
+        title: 'Mentor another team with your methodology',
+        description: 'Programme maturity compounds when it spreads. Identify one adjacent team — marketing, product, or customer success — and run a structured knowledge transfer to expand your programme reach and internal influence.',
+      },
+    ],
+  },
+};
+
+function getRecommendationBucket(
+  score: number,
+  cats: { process: number; strategy: number; insight: number; culture: number }
+): RecommendationBucket {
+  if (score >= 70) return 'high_maturity';
+  if (score < 35) return 'early_stage';
+  if (cats.process >= 60 && cats.insight < 50 && cats.strategy < 50) return 'tool_heavy';
+  if (cats.process >= 60 && (cats.strategy < 50 || cats.culture < 50)) return 'process_strong';
+  if (cats.insight >= 60 && cats.process < 50) return 'insight_rich';
+  if (score < 55) return 'early_stage';
+  return 'process_strong';
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const getScoreLevel = (score: number): 'low' | 'medium' | 'high' =>
@@ -115,13 +241,9 @@ function ScoreDisplay({ score }: { score: number }) {
   return (
     <div className="flex flex-col items-center gap-1">
       <div className="relative flex items-center justify-center">
-        {/* Pulsating glow behind the number */}
         <div
           className="absolute inset-0 rounded-full blur-3xl"
-          style={{
-            background: color,
-            animation: 'score-glow 2.5s ease-in-out infinite',
-          }}
+          style={{ background: color, animation: 'score-glow 2.5s ease-in-out infinite' }}
         />
         <span
           className="relative tabular-nums leading-none"
@@ -135,7 +257,7 @@ function ScoreDisplay({ score }: { score: number }) {
           {current}%
         </span>
       </div>
-      <span className="text-xs text-gray-400 font-light tracking-widest uppercase">Maturity Score</span>
+      <span className="text-xs text-gray-400 dark:text-[#888888] font-light tracking-widest uppercase">Maturity Score</span>
     </div>
   );
 }
@@ -150,18 +272,18 @@ function CategoryCard({ category, score, description }: { category: CategoryKey;
   }, [score]);
 
   return (
-    <div className="rounded-xl border border-gray-100 bg-white p-5">
+    <div className="rounded-xl border border-gray-100 dark:border-[#3a3a3a] bg-white dark:bg-[#2A2A2A] p-5">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span
             className="inline-flex w-7 h-7 items-center justify-center rounded-lg flex-shrink-0"
-            style={{ color: '#7a00df', background: 'rgba(122,0,223,0.08)' }}
+            style={{ color: 'var(--brand-accent)', background: 'var(--brand-tint)' }}
           >
             {CATEGORY_ICONS[category]}
           </span>
           <span
             className="text-[10px] font-medium tracking-widest uppercase"
-            style={{ color: '#7a00df' }}
+            style={{ color: 'var(--brand-accent)' }}
           >
             {CATEGORY_LABELS[category]}
           </span>
@@ -169,15 +291,14 @@ function CategoryCard({ category, score, description }: { category: CategoryKey;
         <span className="text-lg font-medium tabular-nums" style={{ color }}>{score}%</span>
       </div>
 
-      {/* Progress bar */}
-      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-3">
+      <div className="h-1.5 bg-gray-100 dark:bg-[#3a3a3a] rounded-full overflow-hidden mb-3">
         <div
           className="h-full rounded-full transition-all duration-700 ease-out"
           style={{ width: `${width}%`, background: color }}
         />
       </div>
 
-      <p className="text-sm text-gray-500 font-light leading-relaxed">{description}</p>
+      <p className="text-sm text-gray-500 dark:text-[#b8b4ae] font-light leading-relaxed">{description}</p>
     </div>
   );
 }
@@ -196,10 +317,10 @@ export default function ResultsPage() {
 
   if (state.isLoading || !state.scores || !state.categoryPercentages) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#1A1A1A] flex items-center justify-center">
         <div className="text-center space-y-4">
           <LoadingSpinner size="large" />
-          <p className="text-sm text-gray-400 font-light">Calculating your results...</p>
+          <p className="text-sm text-gray-400 dark:text-[#888888] font-light">Calculating your results...</p>
         </div>
       </div>
     );
@@ -207,13 +328,13 @@ export default function ResultsPage() {
 
   if (!state.isComplete || Object.keys(state.answers).length === 0) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#1A1A1A] flex items-center justify-center">
         <div className="text-center space-y-4">
-          <p className="text-sm text-gray-400 font-light">No results available. Please complete the quiz first.</p>
+          <p className="text-sm text-gray-400 dark:text-[#888888] font-light">No results available. Please complete the quiz first.</p>
           <button
             onClick={() => router.push('/quiz')}
-            className="px-6 py-2.5 rounded-full text-sm font-medium text-white cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg"
-            style={{ background: 'linear-gradient(135deg, #7a00df, #a855f7)' }}
+            className="px-6 py-2.5 rounded-full text-sm font-medium cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-lg"
+            style={{ background: 'var(--brand-gradient)', color: 'var(--brand-btn-text)' }}
           >
             Take the quiz
           </button>
@@ -226,14 +347,24 @@ export default function ResultsPage() {
   const persona = PERSONAS[getPersonaLevel(percentageScore)];
   const nextStep = getNextStep(percentageScore);
 
+  const cats = {
+    process: state.categoryPercentages.process ?? 0,
+    strategy: state.categoryPercentages.strategy ?? 0,
+    insight: state.categoryPercentages.insight ?? 0,
+    culture: state.categoryPercentages.culture ?? 0,
+  };
+  const bucket = getRecommendationBucket(percentageScore, cats);
+  const { recs } = BUCKET_RECOMMENDATIONS[bucket];
+
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white dark:bg-[#1A1A1A] flex flex-col">
       {/* Header */}
-      <header className="flex-shrink-0 flex items-center justify-between px-6 py-5 w-full border-b border-gray-100">
-        <img src="/images/k-v4-black.png" alt="Kyzn Academy" className="h-8 w-auto" />
+      <header className="flex-shrink-0 flex items-center justify-between px-6 py-5 w-full border-b border-gray-100 dark:border-[#333333]">
+        <img src="/images/k-v4-black.png" alt="Kyzn Academy" className="h-8 w-auto dark:hidden" />
+        <img src="/images/k-v4-offwhite.png" alt="Kyzn Academy" className="h-8 w-auto hidden dark:block" />
         <a
           href="https://kyznacademy.com"
-          className="text-sm text-gray-400 hover:text-gray-600 transition-colors font-light"
+          className="text-sm text-gray-400 dark:text-[#888888] hover:text-gray-600 dark:hover:text-[#b8b4ae] transition-colors font-light"
         >
           Back to site
         </a>
@@ -248,7 +379,7 @@ export default function ResultsPage() {
             initial="initial"
             animate="animate"
             variants={stagger}
-            className="rounded-2xl border border-gray-100 bg-white px-8 py-12 flex flex-col items-center text-center space-y-6"
+            className="rounded-2xl border border-gray-100 dark:border-[#3a3a3a] bg-white dark:bg-[#2A2A2A] px-8 py-12 flex flex-col items-center text-center space-y-6"
           >
             <motion.div variants={fadeUp}>
               <ScoreDisplay score={percentageScore} />
@@ -266,23 +397,23 @@ export default function ResultsPage() {
             <motion.div variants={fadeUp} className="space-y-3 max-w-2xl">
               <h1
                 className="text-4xl sm:text-5xl leading-tight"
-                style={{ fontFamily: 'RecklessCondensed, Georgia, serif', fontWeight: 400, color: '#7a00df' }}
+                style={{ fontFamily: 'RecklessCondensed, Georgia, serif', fontWeight: 400, color: 'var(--brand-accent)' }}
               >
                 {persona.title}
               </h1>
-              <p className="text-base text-gray-500 font-light leading-relaxed">
+              <p className="text-base text-gray-500 dark:text-[#b8b4ae] font-light leading-relaxed">
                 {persona.description}
               </p>
             </motion.div>
 
-            <motion.p variants={fadeUp} className="text-sm text-gray-400 font-light">
+            <motion.p variants={fadeUp} className="text-sm text-gray-400 dark:text-[#888888] font-light">
               {nextStep.text}{' '}
               <a
                 href={nextStep.href}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-medium underline underline-offset-4 transition-opacity hover:opacity-70"
-                style={{ color: '#7a00df' }}
+                style={{ color: 'var(--brand-accent)' }}
               >
                 {nextStep.linkText}
               </a>
@@ -300,12 +431,12 @@ export default function ResultsPage() {
           >
             <motion.div variants={fadeUp} className="space-y-2">
               <h2
-                className="text-3xl sm:text-4xl text-gray-900"
+                className="text-3xl sm:text-4xl text-gray-900 dark:text-[#F0EDE8]"
                 style={{ fontFamily: 'RecklessCondensed, Georgia, serif', fontWeight: 400 }}
               >
                 Your Performance Profile
               </h2>
-              <p className="text-sm text-gray-500 font-light">
+              <p className="text-sm text-gray-500 dark:text-[#b8b4ae] font-light">
                 How you score across the four key dimensions of experimentation maturity.
               </p>
             </motion.div>
@@ -332,33 +463,33 @@ export default function ResultsPage() {
           >
             <motion.div variants={fadeUp} className="space-y-2">
               <h2
-                className="text-3xl sm:text-4xl text-gray-900"
+                className="text-3xl sm:text-4xl text-gray-900 dark:text-[#F0EDE8]"
                 style={{ fontFamily: 'RecklessCondensed, Georgia, serif', fontWeight: 400 }}
               >
                 Performance Analysis
               </h2>
-              <p className="text-sm text-gray-500 font-light">
+              <p className="text-sm text-gray-500 dark:text-[#b8b4ae] font-light">
                 Visualise your scores across all four dimensions at a glance.
               </p>
             </motion.div>
 
             <motion.div
               variants={fadeUp}
-              className="rounded-xl border border-gray-100 bg-white p-6 flex items-center justify-center"
+              className="rounded-xl border border-gray-100 dark:border-[#3a3a3a] bg-white dark:bg-[#2A2A2A] p-6 flex items-center justify-center"
             >
               <RadarChart
                 data={[
-                  { category: 'Process', score: state.categoryPercentages.process ?? 0 },
-                  { category: 'Strategy', score: state.categoryPercentages.strategy ?? 0 },
-                  { category: 'Insight', score: state.categoryPercentages.insight ?? 0 },
-                  { category: 'Culture', score: state.categoryPercentages.culture ?? 0 },
+                  { category: 'Process', score: cats.process },
+                  { category: 'Strategy', score: cats.strategy },
+                  { category: 'Insight', score: cats.insight },
+                  { category: 'Culture', score: cats.culture },
                 ]}
                 className="max-w-lg mx-auto w-full"
               />
             </motion.div>
           </motion.section>
 
-          {/* ── Section 4: Recommendations ────────────────────────────────── */}
+          {/* ── Section 4: Recommendations (P4 bucket-based) ──────────────── */}
           <motion.section
             initial="initial"
             whileInView="animate"
@@ -368,37 +499,37 @@ export default function ResultsPage() {
           >
             <motion.div variants={fadeUp} className="space-y-2">
               <h2
-                className="text-3xl sm:text-4xl text-gray-900"
+                className="text-3xl sm:text-4xl text-gray-900 dark:text-[#F0EDE8]"
                 style={{ fontFamily: 'RecklessCondensed, Georgia, serif', fontWeight: 400 }}
               >
                 Personalised Recommendations
               </h2>
-              <p className="text-sm text-gray-500 font-light">
+              <p className="text-sm text-gray-500 dark:text-[#b8b4ae] font-light">
                 Specific actions to advance your experimentation programme, based on your score.
               </p>
             </motion.div>
 
             <motion.div variants={fadeUp} className="grid sm:grid-cols-2 gap-4">
-              {persona.recommendations.map((rec, index) => (
+              {recs.map((rec, index) => (
                 <div
                   key={index}
-                  className="rounded-xl border border-gray-100 bg-white p-5 space-y-3"
+                  className="rounded-xl border border-gray-100 dark:border-[#3a3a3a] bg-white dark:bg-[#2A2A2A] p-5 space-y-3"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-start gap-2">
                     <span
-                      className="inline-flex w-7 h-7 items-center justify-center rounded-lg flex-shrink-0"
-                      style={{ color: '#7a00df', background: 'rgba(122,0,223,0.08)' }}
+                      className="inline-flex w-7 h-7 items-center justify-center rounded-lg flex-shrink-0 mt-0.5"
+                      style={{ color: 'var(--brand-accent)', background: 'var(--brand-tint)' }}
                     >
-                      {CATEGORY_ICONS[rec.category]}
+                      {CATEGORY_ICONS[rec.icon]}
                     </span>
                     <h3
-                      className="text-lg text-gray-900 leading-snug"
+                      className="text-gray-900 dark:text-[#F0EDE8] leading-snug"
                       style={{ fontFamily: 'RecklessCondensed, Georgia, serif', fontWeight: 400 }}
                     >
                       {rec.title}
                     </h3>
                   </div>
-                  <p className="text-sm text-gray-500 font-light leading-relaxed">{rec.description}</p>
+                  <p className="text-sm text-gray-500 dark:text-[#b8b4ae] font-light leading-relaxed">{rec.description}</p>
                 </div>
               ))}
             </motion.div>
@@ -413,16 +544,16 @@ export default function ResultsPage() {
           >
             <motion.div
               variants={fadeUp}
-              className="rounded-2xl border border-gray-100 px-8 py-12 text-center space-y-5"
-              style={{ background: 'rgba(122,0,223,0.03)' }}
+              className="rounded-2xl border border-gray-100 dark:border-[#3a3a3a] px-8 py-12 text-center space-y-5"
+              style={{ background: 'var(--brand-cta-tint)' }}
             >
               <h2
-                className="text-3xl sm:text-4xl text-gray-900"
+                className="text-3xl sm:text-4xl text-gray-900 dark:text-[#F0EDE8]"
                 style={{ fontFamily: 'RecklessCondensed, Georgia, serif', fontWeight: 400 }}
               >
                 What&apos;s Next?
               </h2>
-              <p className="text-sm text-gray-500 font-light max-w-md mx-auto leading-relaxed">
+              <p className="text-sm text-gray-500 dark:text-[#b8b4ae] font-light max-w-md mx-auto leading-relaxed">
                 Share your results, or book a call to talk through what the recommendations mean for your programme in practice.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -431,10 +562,10 @@ export default function ResultsPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className={cn(
-                    'inline-flex items-center gap-2 px-8 py-3 rounded-full text-white text-sm font-medium',
+                    'inline-flex items-center gap-2 px-8 py-3 rounded-full text-sm font-medium',
                     'transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5 cursor-pointer'
                   )}
-                  style={{ background: 'linear-gradient(135deg, #7a00df, #a855f7)' }}
+                  style={{ background: 'var(--brand-gradient)', color: 'var(--brand-btn-text)' }}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -449,7 +580,7 @@ export default function ResultsPage() {
                       navigator.clipboard.writeText(window.location.origin);
                     }
                   }}
-                  className="inline-flex items-center gap-2 px-8 py-3 rounded-full text-sm font-medium text-gray-600 border border-gray-200 hover:border-gray-300 hover:text-gray-800 transition-all duration-200 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-8 py-3 rounded-full text-sm font-medium text-gray-600 dark:text-[#b8b4ae] border border-gray-200 dark:border-[#3a3a3a] hover:border-gray-300 dark:hover:border-[#555555] hover:text-gray-800 dark:hover:text-[#F0EDE8] transition-all duration-200 cursor-pointer"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -464,14 +595,14 @@ export default function ResultsPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-100 py-6 px-6 text-center space-y-2">
+      <footer className="border-t border-gray-100 dark:border-[#333333] py-6 px-6 text-center space-y-2">
         <button
           onClick={() => { dispatch({ type: 'RESET_QUIZ' }); router.push('/'); }}
-          className="text-xs text-gray-400 hover:text-gray-600 transition-colors font-light cursor-pointer underline underline-offset-4"
+          className="text-xs text-gray-400 dark:text-[#888888] hover:text-gray-600 dark:hover:text-[#b8b4ae] transition-colors font-light cursor-pointer underline underline-offset-4"
         >
           Retake the quiz
         </button>
-        <p className="text-xs text-gray-400 font-light">
+        <p className="text-xs text-gray-400 dark:text-[#888888] font-light">
           &copy; {new Date().getFullYear()} Kyzn Academy. All rights reserved.
         </p>
       </footer>

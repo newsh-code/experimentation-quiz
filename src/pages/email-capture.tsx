@@ -64,16 +64,16 @@ export default function EmailCapturePage() {
   };
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden flex flex-col">
+    <div className="min-h-screen overflow-x-hidden flex flex-col bg-white dark:bg-[#1A1A1A]">
       {/* Animated blob background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <div
           className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-[0.12] blur-3xl animate-blob"
-          style={{ background: 'radial-gradient(circle, #7a00df, #a855f7)', animationDelay: '0s' }}
+          style={{ background: 'radial-gradient(circle, var(--brand-accent), #a855f7)', animationDelay: '0s' }}
         />
         <div
           className="absolute top-1/3 -right-40 w-[600px] h-[600px] rounded-full opacity-[0.10] blur-3xl animate-blob"
-          style={{ background: 'radial-gradient(circle, #0693e3, #7a00df)', animationDelay: '4s' }}
+          style={{ background: 'radial-gradient(circle, #0693e3, var(--brand-accent))', animationDelay: '4s' }}
         />
         <div
           className="absolute -bottom-20 left-1/4 w-[450px] h-[450px] rounded-full opacity-[0.10] blur-3xl animate-blob"
@@ -83,7 +83,8 @@ export default function EmailCapturePage() {
 
       {/* Header */}
       <header className="relative z-10 flex-shrink-0 flex items-center px-6 py-5 w-full">
-        <img src="/images/k-v4-black.png" alt="Kyzn Academy" className="h-8 w-auto" />
+        <img src="/images/k-v4-black.png" alt="Kyzn Academy" className="h-8 w-auto dark:hidden" />
+        <img src="/images/k-v4-offwhite.png" alt="Kyzn Academy" className="h-8 w-auto hidden dark:block" />
       </header>
 
       {/* Content */}
@@ -97,12 +98,12 @@ export default function EmailCapturePage() {
           {/* Heading + value prop */}
           <motion.div variants={fadeUp} className="space-y-3">
             <h1
-              className="text-[2.4rem] sm:text-[3rem] leading-tight text-gray-900"
+              className="text-[2.4rem] sm:text-[3rem] leading-tight text-gray-900 dark:text-[#F0EDE8]"
               style={{ fontFamily: 'RecklessCondensed, Georgia, serif', fontWeight: 400 }}
             >
               Your results are ready
             </h1>
-            <p className="text-sm text-gray-500 font-light leading-relaxed">
+            <p className="text-sm font-light leading-relaxed text-gray-500 dark:text-[#b8b4ae]">
               Enter your details to save your score and receive your personalised breakdown
               across all four dimensions. All fields are optional.
             </p>
@@ -111,7 +112,7 @@ export default function EmailCapturePage() {
           {/* Form */}
           <motion.form variants={fadeUp} onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="name" className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <Label htmlFor="name" className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-[#888888]">
                 Name
               </Label>
               <Input
@@ -120,12 +121,12 @@ export default function EmailCapturePage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Your name"
-                className="h-11 bg-white border border-gray-200 text-gray-900 placeholder:text-gray-400 font-light focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:border-primary/40 rounded-lg"
+                className="h-11 border rounded-lg font-light bg-white dark:bg-[#2A2A2A] border-gray-200 dark:border-[#3a3a3a] text-gray-900 dark:text-[#F0EDE8] placeholder:text-gray-400 dark:placeholder:text-[#888888] focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:border-primary/40"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <Label htmlFor="email" className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-[#888888]">
                 Email
               </Label>
               <Input
@@ -134,12 +135,12 @@ export default function EmailCapturePage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@email.com"
-                className="h-11 bg-white border border-gray-200 text-gray-900 placeholder:text-gray-400 font-light focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:border-primary/40 rounded-lg"
+                className="h-11 border rounded-lg font-light bg-white dark:bg-[#2A2A2A] border-gray-200 dark:border-[#3a3a3a] text-gray-900 dark:text-[#F0EDE8] placeholder:text-gray-400 dark:placeholder:text-[#888888] focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:border-primary/40"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="company" className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <Label htmlFor="company" className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-[#888888]">
                 Company
               </Label>
               <Input
@@ -148,7 +149,7 @@ export default function EmailCapturePage() {
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
                 placeholder="Your organisation"
-                className="h-11 bg-white border border-gray-200 text-gray-900 placeholder:text-gray-400 font-light focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:border-primary/40 rounded-lg"
+                className="h-11 border rounded-lg font-light bg-white dark:bg-[#2A2A2A] border-gray-200 dark:border-[#3a3a3a] text-gray-900 dark:text-[#F0EDE8] placeholder:text-gray-400 dark:placeholder:text-[#888888] focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:border-primary/40"
               />
             </div>
 
@@ -167,7 +168,7 @@ export default function EmailCapturePage() {
                   'transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0',
                   isSubmitting && 'opacity-70 cursor-not-allowed'
                 )}
-                style={{ background: 'linear-gradient(135deg, #7a00df, #a855f7)' }}
+                style={{ background: 'var(--brand-gradient)', color: 'var(--brand-btn-text)' }}
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
@@ -182,13 +183,13 @@ export default function EmailCapturePage() {
               <button
                 type="button"
                 onClick={handleSkip}
-                className="w-full h-11 text-sm text-gray-400 hover:text-gray-600 transition-colors font-light cursor-pointer"
+                className="w-full h-11 text-sm text-gray-400 dark:text-[#888888] hover:text-gray-600 dark:hover:text-[#b8b4ae] transition-colors font-light cursor-pointer"
               >
                 Skip and see results
               </button>
             </div>
 
-            <p className="text-xs text-center text-gray-400 font-light">
+            <p className="text-xs text-center text-gray-400 dark:text-[#888888] font-light">
               We never share your information with third parties.
             </p>
           </motion.form>

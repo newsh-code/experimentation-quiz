@@ -30,7 +30,9 @@ export default function QuizPage() {
   const { state, dispatch } = useQuiz();
   const [selectedValue, setSelectedValue] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [navVisible, setNavVisible] = useState(true);
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const navRef = useRef<HTMLDivElement>(null);
 
   const currentQuestion = useMemo(() => {
     if (!Array.isArray(state.questions) || state.questions.length === 0) return null;
@@ -49,6 +51,18 @@ export default function QuizPage() {
       router.push('/email-capture');
     }
   }, [state.isComplete, router]);
+
+  // P1: IntersectionObserver — track when the nav bar (CTA) is in viewport
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setNavVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const handleAnswer = useCallback((value: number) => {
     if (isSubmitting || !currentQuestion) return;
@@ -133,6 +147,8 @@ export default function QuizPage() {
   const progress = ((state.currentQuestion + 1) / QUESTIONS.length) * 100;
   const progressPhrase = getProgressPhrase(progress);
 
+  const showStickyBar = isLastQuestion && selectedValue !== null && !navVisible;
+
   if (!currentQuestion) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -150,17 +166,18 @@ export default function QuizPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white dark:bg-[#1A1A1A] flex flex-col">
       {/* Header: logo + progress phrase + counter */}
       <div className="flex-shrink-0 px-6 py-4 max-w-2xl w-full mx-auto">
         <div className="flex items-center justify-between mb-3">
-          <img src="/images/k-v4-black.png" alt="Kyzn Academy" className="h-8 w-auto" />
+          <img src="/images/k-v4-black.png" alt="Kyzn Academy" className="h-8 w-auto dark:hidden" />
+          <img src="/images/k-v4-offwhite.png" alt="Kyzn Academy" className="h-8 w-auto hidden dark:block" />
           <div className="flex items-center gap-3">
             <motion.span
               key={progressPhrase}
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-xs text-gray-400 font-light"
+              className="text-xs text-gray-400 dark:text-[#888888] font-light"
             >
               {progressPhrase}
             </motion.span>
@@ -168,14 +185,14 @@ export default function QuizPage() {
               key={state.currentQuestion}
               initial={{ opacity: 0, x: 4 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-xs font-medium text-gray-500 tabular-nums"
+              className="text-xs font-medium text-gray-500 dark:text-[#b8b4ae] tabular-nums"
               data-testid="quiz-counter"
             >
               {state.currentQuestion + 1} / {QUESTIONS.length}
             </motion.span>
           </div>
         </div>
-        <Progress value={progress} className="h-1 bg-gray-100" />
+        <Progress value={progress} className="h-1 bg-gray-100 dark:bg-[#3a3a3a]" />
       </div>
 
       {/* Question card — fills remaining viewport */}
@@ -194,7 +211,7 @@ export default function QuizPage() {
                 {/* Category pill */}
                 <span
                   className="inline-block self-start text-[10px] font-medium tracking-widest uppercase px-2.5 py-1 rounded-full mb-3 sm:mb-4"
-                  style={{ color: '#7a00df', background: 'rgba(122,0,223,0.08)' }}
+                  style={{ color: 'var(--brand-accent)', background: 'var(--brand-tint)' }}
                 >
                   {CATEGORY_LABELS[currentQuestion.category] ?? currentQuestion.category}
                 </span>
@@ -234,13 +251,14 @@ export default function QuizPage() {
                       {({ checked }) => (
                         <div
                           className="flex w-full items-center gap-3 px-3 py-2.5 sm:px-4 sm:py-3"
-                          style={checked ? { background: 'linear-gradient(135deg, #7a00df, #a855f7)' } : {}}
+                          style={checked ? { background: 'var(--brand-gradient)' } : {}}
                         >
                           <span
                             className={cn(
                               'flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium transition-colors',
-                              checked ? 'bg-white/20 text-white' : 'bg-secondary text-muted-foreground'
+                              checked ? 'bg-white/20' : 'bg-secondary text-muted-foreground'
                             )}
+                            style={checked ? { color: 'var(--brand-btn-text)' } : {}}
                           >
                             {index + 1}
                           </span>
@@ -248,8 +266,9 @@ export default function QuizPage() {
                             as="p"
                             className={cn(
                               'flex-1 text-sm leading-snug',
-                              checked ? 'text-white font-medium' : 'text-foreground font-light'
+                              checked ? 'font-medium' : 'text-foreground font-light'
                             )}
+                            style={checked ? { color: 'var(--brand-btn-text)' } : {}}
                           >
                             {option.text}
                           </RadioGroup.Label>
@@ -257,7 +276,8 @@ export default function QuizPage() {
                             <motion.div
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              className="flex-shrink-0 text-white"
+                              className="flex-shrink-0"
+                              style={{ color: 'var(--brand-btn-text)' }}
                             >
                               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
@@ -275,7 +295,7 @@ export default function QuizPage() {
         </Card>
 
         {/* Navigation */}
-        <div className="flex items-center gap-3 mt-3">
+        <div ref={navRef} className="flex items-center gap-3 mt-3">
           {/* invisible on Q1 to preserve layout balance */}
           <Button
             variant="outline"
@@ -298,10 +318,10 @@ export default function QuizPage() {
               onClick={() => selectedValue !== null && handleAnswer(selectedValue)}
               disabled={isSubmitting || selectedValue === null}
               className={cn(
-                'flex-1 h-9 text-sm font-medium transition-all shadow-md hover:shadow-lg text-white rounded-full',
+                'flex-1 h-9 text-sm font-medium transition-all shadow-md hover:shadow-lg rounded-full',
                 (isSubmitting || selectedValue === null) && 'opacity-50 cursor-not-allowed'
               )}
-              style={{ background: 'linear-gradient(135deg, #7a00df, #a855f7)' }}
+              style={{ background: 'var(--brand-gradient)', color: 'var(--brand-btn-text)' }}
             >
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
@@ -319,6 +339,35 @@ export default function QuizPage() {
           )}
         </div>
       </div>
+
+      {/* P1: Sticky bottom bar — mobile only, last question, answer selected, nav out of view */}
+      {showStickyBar && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-[99] bg-[#2A2A2A] px-6 py-4 border-t border-[#3a3a3a]">
+          <button
+            onClick={() => selectedValue !== null && handleAnswer(selectedValue)}
+            disabled={isSubmitting}
+            className={cn(
+              'w-full h-11 rounded-full text-sm font-medium text-[#1A1A1A] transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 cursor-pointer',
+              isSubmitting && 'opacity-70 cursor-not-allowed'
+            )}
+            style={{ background: '#FFC313' }}
+          >
+            {isSubmitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <LoadingSpinner size="small" />
+                Processing...
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                See My Results
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </span>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

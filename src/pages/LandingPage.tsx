@@ -58,16 +58,16 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden">
+    <div className="min-h-screen overflow-x-hidden bg-white dark:bg-[#1A1A1A]">
       {/* Animated blob background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <div
           className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-[0.12] blur-3xl animate-blob"
-          style={{ background: 'radial-gradient(circle, #7a00df, #a855f7)', animationDelay: '0s' }}
+          style={{ background: 'radial-gradient(circle, var(--brand-accent), #a855f7)', animationDelay: '0s' }}
         />
         <div
           className="absolute top-1/3 -right-40 w-[600px] h-[600px] rounded-full opacity-[0.10] blur-3xl animate-blob"
-          style={{ background: 'radial-gradient(circle, #0693e3, #7a00df)', animationDelay: '4s' }}
+          style={{ background: 'radial-gradient(circle, #0693e3, var(--brand-accent))', animationDelay: '4s' }}
         />
         <div
           className="absolute -bottom-20 left-1/4 w-[450px] h-[450px] rounded-full opacity-[0.10] blur-3xl animate-blob"
@@ -77,12 +77,11 @@ export default function LandingPage() {
 
       {/* Nav */}
       <header className="relative z-10 flex items-center justify-between px-6 py-5 max-w-5xl mx-auto">
-        <div className="flex items-center">
-          <img src="/images/k-v4-black.png" alt="Kyzn Academy" className="h-8 w-auto" />
-        </div>
+        <img src="/images/k-v4-black.png" alt="Kyzn Academy" className="h-8 w-auto dark:hidden" />
+        <img src="/images/k-v4-offwhite.png" alt="Kyzn Academy" className="h-8 w-auto hidden dark:block" />
         <a
           href="https://kyznacademy.com"
-          className="text-sm text-gray-500 hover:text-gray-800 transition-colors font-light"
+          className="text-sm font-light transition-colors text-gray-500 hover:text-gray-800 dark:text-[#b8b4ae] dark:hover:text-[#F0EDE8]"
         >
           Back to site
         </a>
@@ -101,7 +100,11 @@ export default function LandingPage() {
             <motion.div variants={fadeUp}>
               <span
                 className="inline-block text-xs font-medium tracking-widest uppercase px-4 py-1.5 rounded-full border"
-                style={{ color: '#7a00df', borderColor: 'rgba(122,0,223,0.25)', background: 'rgba(122,0,223,0.05)' }}
+                style={{
+                  color: 'var(--brand-accent)',
+                  borderColor: 'var(--brand-border)',
+                  background: 'var(--brand-tint-pill)',
+                }}
               >
                 Free Assessment
               </span>
@@ -110,15 +113,12 @@ export default function LandingPage() {
             {/* Heading */}
             <motion.h1
               variants={fadeUp}
-              className="text-[2.8rem] sm:text-[4.5rem] leading-[1.05] tracking-tight text-gray-900"
+              className="text-[2.8rem] sm:text-[4.5rem] leading-[1.05] tracking-tight text-gray-900 dark:text-[#F0EDE8]"
               style={{ fontFamily: 'RecklessCondensed, Georgia, serif', fontWeight: 300 }}
             >
               Discover Your{' '}
               <br className="hidden sm:block" />
-              <em
-                className="not-italic"
-                style={{ color: '#7a00df' }}
-              >
+              <em className="not-italic" style={{ color: 'var(--brand-accent)' }}>
                 Experimentation
               </em>
               <br className="hidden sm:block" />
@@ -128,7 +128,7 @@ export default function LandingPage() {
             {/* Subheading */}
             <motion.p
               variants={fadeUp}
-              className="text-base sm:text-lg text-gray-500 max-w-xl mx-auto leading-relaxed font-light"
+              className="text-base sm:text-lg max-w-xl mx-auto leading-relaxed font-light text-gray-500 dark:text-[#b8b4ae]"
             >
               A 5-minute assessment to benchmark your organisation&apos;s experimentation capability
               and get a personalised roadmap for growth.
@@ -139,10 +139,10 @@ export default function LandingPage() {
               <button
                 onClick={handleStartQuiz}
                 className={cn(
-                  'group inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-white text-sm font-medium',
+                  'group inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-sm font-medium cursor-pointer',
                   'transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0'
                 )}
-                style={{ background: 'linear-gradient(135deg, #7a00df, #a855f7)' }}
+                style={{ background: 'var(--brand-gradient)', color: 'var(--brand-btn-text)' }}
               >
                 Start the quiz
                 <svg
@@ -155,16 +155,16 @@ export default function LandingPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </button>
-              <p className="text-xs text-gray-400 font-light">
+              <p className="text-xs font-light text-gray-400 dark:text-[#888888]">
                 Takes about 5 minutes &nbsp;·&nbsp; No registration required
               </p>
             </motion.div>
           </motion.div>
         </section>
 
-        {/* Divider line */}
+        {/* Divider */}
         <div className="relative z-10 max-w-5xl mx-auto px-6">
-          <div className="border-t border-gray-100" />
+          <div className="border-t border-gray-100 dark:border-[#333333]" />
         </div>
 
         {/* Features */}
@@ -184,17 +184,17 @@ export default function LandingPage() {
               >
                 <div
                   className="inline-flex w-10 h-10 items-center justify-center rounded-xl"
-                  style={{ color: '#7a00df', background: 'rgba(122,0,223,0.08)' }}
+                  style={{ color: 'var(--brand-accent)', background: 'var(--brand-tint)' }}
                 >
                   {feature.icon}
                 </div>
                 <h3
-                  className="text-lg text-gray-900"
-                  style={{ fontFamily: 'RecklessCondensed, Georgia, serif', fontWeight: 400, fontSize: '1.2rem' }}
+                  className="text-gray-900 dark:text-[#F0EDE8]"
+                  style={{ fontFamily: 'RecklessCondensed, Georgia, serif', fontWeight: 400 }}
                 >
                   {feature.title}
                 </h3>
-                <p className="text-sm text-gray-500 leading-relaxed font-light">
+                <p className="text-sm leading-relaxed font-light text-gray-500 dark:text-[#b8b4ae]">
                   {feature.description}
                 </p>
               </motion.div>
@@ -204,8 +204,8 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-gray-100 py-6 px-6 text-center">
-        <p className="text-xs text-gray-400 font-light">
+      <footer className="relative z-10 border-t py-6 px-6 text-center border-gray-100 dark:border-[#333333]">
+        <p className="text-xs font-light text-gray-400 dark:text-[#888888]">
           &copy; {new Date().getFullYear()} Kyzn Academy. All rights reserved.
         </p>
       </footer>
