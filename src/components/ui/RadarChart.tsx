@@ -1,10 +1,8 @@
-import { useTheme } from "next-themes"
 import {
   Radar,
   RadarChart as RechartsRadarChart,
   PolarGrid,
   PolarAngleAxis,
-  PolarRadiusAxis,
   ResponsiveContainer,
   Tooltip,
 } from "recharts"
@@ -18,10 +16,38 @@ interface RadarChartProps {
   className?: string
 }
 
-export function RadarChart({ data, className }: RadarChartProps) {
-  const { theme } = useTheme()
-  const isDark = theme === "dark"
+function CustomTooltip({ active, payload }: { active?: boolean; payload?: any[] }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-xl border border-gray-100 bg-white px-3 py-2 shadow-md">
+      <p className="text-[10px] font-medium uppercase tracking-widest text-gray-400 mb-0.5">
+        {payload[0]?.payload.subject}
+      </p>
+      <p className="text-lg font-medium tabular-nums" style={{ color: '#7a00df' }}>
+        {payload[0]?.value}%
+      </p>
+    </div>
+  );
+}
 
+function CustomAxisTick({ x, y, payload }: { x?: number; y?: number; payload?: any }) {
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor="middle"
+      dominantBaseline="central"
+      fill="#6b7280"
+      fontSize={12}
+      fontFamily="Poppins, sans-serif"
+      fontWeight={500}
+    >
+      {payload?.value}
+    </text>
+  );
+}
+
+export function RadarChart({ data, className }: RadarChartProps) {
   const chartData = data.map((item) => ({
     subject: item.category,
     score: item.score,
@@ -29,80 +55,38 @@ export function RadarChart({ data, className }: RadarChartProps) {
   }))
 
   return (
-    <div className={cn(
-      "w-full h-[400px] min-h-[400px] relative transition-all duration-200",
-      "sm:h-[450px] md:h-[500px] lg:h-[550px]",
-      className
-    )}>
+    <div className={cn("w-full h-[280px] sm:h-[360px]", className)}>
       <ResponsiveContainer width="100%" height="100%">
         <RechartsRadarChart
           cx="50%"
           cy="50%"
-          outerRadius="75%"
+          outerRadius="62%"
           data={chartData}
-          className={cn(
-            "[&_.recharts-polar-grid-angle-line]:!stroke-border/40",
-            "[&_.recharts-polar-grid-concentric-circle]:!stroke-border/40",
-            "[&_.recharts-polar-radius-axis-line]:!stroke-border/60",
-            "transition-opacity duration-200"
-          )}
         >
           <PolarGrid
             gridType="circle"
-            stroke={isDark ? "hsl(var(--border))" : "hsl(var(--border))"}
-            strokeOpacity={0.5}
+            stroke="#e5e7eb"
+            strokeOpacity={0.8}
             strokeDasharray="4 4"
           />
           <PolarAngleAxis
             dataKey="subject"
-            tick={{
-              fill: isDark ? "hsl(var(--foreground))" : "hsl(var(--foreground))",
-              fontSize: 13,
-              fontWeight: 500,
-            }}
+            tick={<CustomAxisTick />}
             tickLine={false}
-            dy={4}
-          />
-          <PolarRadiusAxis
-            angle={90}
-            domain={[0, 100]}
-            tick={{
-              fill: isDark ? "hsl(var(--muted-foreground))" : "hsl(var(--muted-foreground))",
-              fontSize: 11,
-            }}
-            stroke={isDark ? "hsl(var(--border))" : "hsl(var(--border))"}
-            strokeOpacity={0.6}
-            tickCount={5}
           />
           <Tooltip
-            content={({ active, payload }) => {
-              if (!active || !payload) return null
-              return (
-                <div className={cn(
-                  "rounded-lg border bg-background/95 backdrop-blur-sm p-3 shadow-lg",
-                  "transition-all duration-200 animate-in fade-in-50 zoom-in-95",
-                  "border-border/50"
-                )}>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[0.75rem] uppercase tracking-wider text-muted-foreground font-medium">
-                      {payload[0]?.payload.subject}
-                    </span>
-                    <span className="text-lg font-bold text-foreground">
-                      {payload[0]?.value}%
-                    </span>
-                  </div>
-                </div>
-              )
-            }}
+            content={<CustomTooltip />}
             wrapperStyle={{ outline: "none" }}
           />
           <Radar
             name="Score"
             dataKey="score"
-            stroke="hsl(var(--primary))"
-            fill="hsl(var(--primary))"
-            fillOpacity={0.15}
+            stroke="#7a00df"
+            fill="#7a00df"
+            fillOpacity={0.12}
             strokeWidth={2}
+            dot={{ fill: '#7a00df', r: 3, strokeWidth: 0 }}
+            activeDot={{ fill: '#7a00df', r: 5, strokeWidth: 0 }}
             animationDuration={800}
             animationEasing="ease-out"
           />
@@ -110,4 +94,4 @@ export function RadarChart({ data, className }: RadarChartProps) {
       </ResponsiveContainer>
     </div>
   )
-} 
+}

@@ -16,16 +16,16 @@ module.exports = {
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          50: '#f5f0ff',
+          100: '#ede0ff',
+          200: '#d9bdff',
+          300: '#bf90ff',
+          400: '#a355ff',
+          500: '#8b1aff',
+          600: '#7a00df',
+          700: '#6300b3',
+          800: '#4d0089',
+          900: '#380063',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
@@ -85,6 +85,7 @@ module.exports = {
         'spin-slow': 'spin 2s linear infinite',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'bounce-slow': 'bounce 2s infinite',
+        'blob': 'blob 12s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -99,9 +100,15 @@ module.exports = {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-10px)' },
         },
+        blob: {
+          '0%, 100%': { transform: 'translate(0px, 0px) scale(1)' },
+          '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+          '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+        },
       },
       fontFamily: {
-        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+        sans: ['Poppins', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        display: ['RecklessCondensed', 'Georgia', 'serif'],
       },
       typography: (theme) => ({
         DEFAULT: {

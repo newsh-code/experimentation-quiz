@@ -195,15 +195,33 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
     }
 
     case 'PREVIOUS_QUESTION': {
-      // Validate current question before decrementing
       if (state.currentQuestion <= 0) {
-        console.warn('Already at first question');
         return state;
+      }
+
+      const prevIndex = state.currentQuestion - 1;
+      const prevQuestion = state.questions[prevIndex];
+      const prevAnswer = state.answers[prevIndex];
+
+      // Clear the answer for the question we're returning to so it can be re-answered
+      const newAnswers = { ...state.answers };
+      delete newAnswers[prevIndex];
+
+      // Subtract its score from the category total
+      const newCategoryScores = { ...state.categoryScores };
+      if (prevAnswer !== undefined && prevQuestion) {
+        const prevScore = prevQuestion.options[prevAnswer]?.score ?? 0;
+        newCategoryScores[prevQuestion.category] = Math.max(
+          0,
+          (newCategoryScores[prevQuestion.category] || 0) - prevScore
+        );
       }
 
       return {
         ...state,
-        currentQuestion: state.currentQuestion - 1
+        currentQuestion: prevIndex,
+        answers: newAnswers,
+        categoryScores: newCategoryScores,
       };
     }
 

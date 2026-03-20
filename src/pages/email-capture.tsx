@@ -3,20 +3,15 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/router';
 import { useQuiz } from '../context/QuizContext';
 import { PERSONAS } from '../data/personas';
-import { generatePDFReport } from '../services/pdfService';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { Button } from '../components/ui/Button';
-import { Card, CardContent } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Alert, AlertDescription } from '../components/ui/Alert';
 import { cn } from '../lib/utils';
-import { ThemeToggle } from '../components/ui/ThemeToggle';
 
-const fadeInUp = {
+const fadeUp = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -20 }
 };
 
 export default function EmailCapturePage() {
@@ -25,29 +20,18 @@ export default function EmailCapturePage() {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
-    setIsGeneratingPDF(true);
+    setIsSubmitting(true);
 
     try {
-      const userData = {
-        name,
-        email,
-        company,
-        timestamp: new Date().toISOString(),
-      };
+      const userData = { name, email, company };
+      dispatch({ type: 'SUBMIT_EMAIL', email, userData });
 
-      dispatch({
-        type: 'SUBMIT_EMAIL',
-        email,
-        userData,
-      });
-
-      // Fire-and-forget: subscribe to MailerLite (only when email is provided)
       if (email) {
         const score = state.percentageScore ?? 0;
         const level =
@@ -65,19 +49,12 @@ export default function EmailCapturePage() {
         }).catch(err => console.error('MailerLite subscription failed:', err));
       }
 
-      await generatePDFReport({
-        ...state,
-        email,
-        userData,
-      });
-
-      // Navigate immediately — no delay to avoid mobile state loss
       router.push('/results');
     } catch (err) {
-      console.error('Error generating report:', err);
-      setError('Failed to generate report. Please try again.');
+      console.error('Error saving details:', err);
+      setError('Something went wrong. Please try again.');
     } finally {
-      setIsGeneratingPDF(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -87,126 +64,136 @@ export default function EmailCapturePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
+    <div className="min-h-screen bg-white overflow-x-hidden flex flex-col">
+      {/* Animated blob background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div
+          className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-[0.12] blur-3xl animate-blob"
+          style={{ background: 'radial-gradient(circle, #7a00df, #a855f7)', animationDelay: '0s' }}
+        />
+        <div
+          className="absolute top-1/3 -right-40 w-[600px] h-[600px] rounded-full opacity-[0.10] blur-3xl animate-blob"
+          style={{ background: 'radial-gradient(circle, #0693e3, #7a00df)', animationDelay: '4s' }}
+        />
+        <div
+          className="absolute -bottom-20 left-1/4 w-[450px] h-[450px] rounded-full opacity-[0.10] blur-3xl animate-blob"
+          style={{ background: 'radial-gradient(circle, #a855f7, #ff6900)', animationDelay: '8s' }}
+        />
       </div>
 
-      <div className="container max-w-lg mx-auto px-4 py-16">
+      {/* Header */}
+      <header className="relative z-10 flex-shrink-0 flex items-center px-6 py-5 w-full">
+        <img src="/images/k-v4-black.png" alt="Kyzn Academy" className="h-8 w-auto" />
+      </header>
+
+      {/* Content */}
+      <main className="relative z-10 flex-1 flex flex-col justify-center px-6 pb-12 max-w-lg mx-auto w-full">
         <motion.div
           initial="initial"
           animate="animate"
-          exit="exit"
-          variants={{
-            animate: {
-              transition: {
-                staggerChildren: 0.1
-              }
-            }
-          }}
+          variants={{ animate: { transition: { staggerChildren: 0.1 } } }}
           className="space-y-8"
         >
-          <motion.div variants={fadeInUp} className="text-center space-y-4">
-            <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-500 to-primary-700 dark:from-primary-400 dark:to-primary-600">
-              🎉 Quiz Complete!
+          {/* Heading + value prop */}
+          <motion.div variants={fadeUp} className="space-y-3">
+            <h1
+              className="text-[2.4rem] sm:text-[3rem] leading-tight text-gray-900"
+              style={{ fontFamily: 'RecklessCondensed, Georgia, serif', fontWeight: 400 }}
+            >
+              Your results are ready
             </h1>
-            <p className="text-xl text-muted-foreground">
-              Get your detailed report and personalized recommendations
+            <p className="text-sm text-gray-500 font-light leading-relaxed">
+              Enter your details to save your score and receive your personalised breakdown
+              across all four dimensions. All fields are optional.
             </p>
           </motion.div>
 
-          <Card className="bg-card/50 backdrop-blur-sm border-2">
-            <CardContent className="pt-6">
-              <motion.form
-                variants={fadeInUp}
-                onSubmit={handleSubmit}
-                className="space-y-6"
-              >
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-sm font-medium">Name</Label>
-                    <Input
-                      type="text"
-                      id="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Your name (optional)"
-                      className="w-full h-11"
-                    />
-                  </div>
+          {/* Form */}
+          <motion.form variants={fadeUp} onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="name" className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Name
+              </Label>
+              <Input
+                type="text"
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                className="h-11 bg-white border border-gray-200 text-gray-900 placeholder:text-gray-400 font-light focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:border-primary/40 rounded-lg"
+              />
+            </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-                    <Input
-                      type="email"
-                      id="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your@email.com (optional)"
-                      className="w-full h-11"
-                    />
-                  </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Email
+              </Label>
+              <Input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="h-11 bg-white border border-gray-200 text-gray-900 placeholder:text-gray-400 font-light focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:border-primary/40 rounded-lg"
+              />
+            </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="company" className="text-sm font-medium">Company</Label>
-                    <Input
-                      type="text"
-                      id="company"
-                      value={company}
-                      onChange={(e) => setCompany(e.target.value)}
-                      placeholder="Your company name (optional)"
-                      className="w-full h-11"
-                    />
-                  </div>
-                </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="company" className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Company
+              </Label>
+              <Input
+                type="text"
+                id="company"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                placeholder="Your organisation"
+                className="h-11 bg-white border border-gray-200 text-gray-900 placeholder:text-gray-400 font-light focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:border-primary/40 rounded-lg"
+              />
+            </div>
 
-                {error && (
-                  <Alert variant="destructive" className="animate-in fade-in-50">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
+            {error && (
+              <Alert variant="destructive" className="animate-in fade-in-50">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-3 pt-2">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={cn(
+                  'w-full h-11 rounded-full text-sm font-medium text-white cursor-pointer',
+                  'transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0',
+                  isSubmitting && 'opacity-70 cursor-not-allowed'
                 )}
+                style={{ background: 'linear-gradient(135deg, #7a00df, #a855f7)' }}
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <LoadingSpinner size="small" />
+                    Saving...
+                  </span>
+                ) : (
+                  'See My Results'
+                )}
+              </button>
 
-                <div className="space-y-4 pt-2">
-                  <Button
-                    type="submit"
-                    disabled={isGeneratingPDF}
-                    className={cn(
-                      "w-full h-11 font-medium shadow-lg hover:shadow-xl transition-all",
-                      "bg-primary hover:bg-primary/90",
-                      "text-primary-foreground",
-                      isGeneratingPDF && "opacity-90"
-                    )}
-                  >
-                    {isGeneratingPDF ? (
-                      <div className="flex items-center justify-center space-x-2">
-                        <LoadingSpinner size="small" />
-                        <span>Loading results...</span>
-                      </div>
-                    ) : (
-                      'Get My Report'
-                    )}
-                  </Button>
+              <button
+                type="button"
+                onClick={handleSkip}
+                className="w-full h-11 text-sm text-gray-400 hover:text-gray-600 transition-colors font-light cursor-pointer"
+              >
+                Skip and see results
+              </button>
+            </div>
 
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={handleSkip}
-                    className="w-full h-11 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Skip and see results
-                  </Button>
-                </div>
-
-                <div className="pt-4 border-t border-border/10">
-                  <p className="text-sm text-center text-muted-foreground">
-                    We respect your privacy and will never share your information with third parties.
-                  </p>
-                </div>
-              </motion.form>
-            </CardContent>
-          </Card>
+            <p className="text-xs text-center text-gray-400 font-light">
+              We never share your information with third parties.
+            </p>
+          </motion.form>
         </motion.div>
-      </div>
+      </main>
     </div>
   );
 }
